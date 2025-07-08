@@ -1,0 +1,81 @@
+[
+  {
+    "product": {
+      "name": "Premium Maske - Anti-Aging Formula",
+      "brand": "BeautyLab",
+      "price": "299.90 TL",
+      "description": "Yeni nesil maske formülü. Premium ingredients ile zenginleştirilmiş.",
+      "category": "maske",
+      "url": "https://demo.com/maske-1"
+    },
+    "seo": {
+      "keywords": [
+        "formula",
+        "premium",
+        "maske",
+        "beautylab",
+        "anti-aging"
+      ],
+      "primary_keyword": "formula",
+      "title": "BeautyLab Premium Maske - Anti-Aging Formula",
+      "meta_description": "Yeni nesil maske formülü. Premium ingredients ile zenginleştirilmiş.",
+      "slug": "formula",
+      "focus_keyphrase": "formula"
+    },
+    "quality_score": 85,
+    "is_valid": true,
+    "processed_at": 1751979917.7876494
+  },
+  {
+    "product": {
+      "name": "Natural Maske with Vitamin C",
+      "brand": "GreenBeauty",
+      "price": "189.90 TL",
+      "description": "Doğal içerikli maske. Vitamin C ve E kompleksi içerir.",
+      "category": "maske",
+      "url": "https://demo.com/maske-2"
+    },
+    "seo": {
+      "keywords": [
+        "maske",
+        "natural",
+        "greenbeauty",
+        "vitamin"
+      ],
+      "primary_keyword": "maske",
+      "title": "GreenBeauty Natural Maske with Vitamin C",
+      "meta_description": "Doğal içerikli maske. Vitamin C ve E kompleksi içerir.",
+      "slug": "maske",
+      "focus_keyphrase": "maske"
+    },
+    "quality_score": 90,
+    "is_valid": true,
+    "processed_at": 1751979918.288863
+  },
+  {
+    "product": {
+      "name": "Professional Maske Solution",
+      "brand": "ProCare",
+      "price": "449.90 TL",
+      "description": "Profesyonel kalitede maske. Dermatolog tavsiyeli formül.",
+      "category": "maske",
+      "url": "https://demo.com/maske-3"
+    },
+    "seo": {
+      "keywords": [
+        "professional",
+        "solution",
+        "maske",
+        "procare"
+      ],
+      "primary_keyword": "professional",
+      "title": "ProCare Professional Maske Solution",
+      "meta_description": "Profesyonel kalitede maske. Dermatolog tavsiyeli formül.",
+      "slug": "professional",
+      "focus_keyphrase": "professional"
+    },
+    "quality_score": 95,
+    "is_valid": true,
+    "processed_at": 1751979918.7899015
+  }
+]

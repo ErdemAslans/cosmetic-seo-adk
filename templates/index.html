@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 Cosmetic SEO Extractor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.9);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .progress {
+            height: 25px;
+            border-radius: 15px;
+        }
+        .result-card {
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .quality-high { border-left-color: #28a745; }
+        .quality-medium { border-left-color: #ffc107; }
+        .quality-low { border-left-color: #dc3545; }
+        #loading {
+            display: none;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stats-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-white mb-3">
+                🎭 <strong>Cosmetic SEO Extractor</strong>
+            </h1>
+            <p class="lead text-white">
+                Kozmetik ürünlerinden profesyonel SEO verilerini çıkarın
+            </p>
+        </div>
+
+        <!-- Main Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <h3 class="card-title text-center mb-4">
+                            <i class="fas fa-search"></i> SEO Analizi Başlat
+                        </h3>
+                        
+                        <form id="extractForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="site" class="form-label">
+                                        <i class="fas fa-store"></i> E-ticaret Sitesi
+                                    </label>
+                                    <select class="form-select" id="site" name="site" required>
+                                        <option value="">Site seçin...</option>
+                                        {% for site_key, site_info in sites.items() %}
+                                        <option value="{{ site_key }}">{{ site_info.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label">
+                                        <i class="fas fa-tags"></i> Ürün Kategorisi
+                                    </label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Önce site seçin...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="max_products" class="form-label">
+                                        <i class="fas fa-hashtag"></i> Maksimum Ürün Sayısı
+                                    </label>
+                                    <input type="number" class="form-control" id="max_products" 
+                                           name="max_products" value="20" min="1" max="100" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-rocket"></i> Analizi Başlat
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Section -->
+        <div id="loading" class="text-center my-5">
+            <div class="card">
+                <div class="card-body p-5">
+                    <div class="loading-spinner mx-auto mb-3"></div>
+                    <h4 id="loadingTitle">İşlem Başlatılıyor...</h4>
+                    <p id="loadingMessage">Lütfen bekleyin, sistem hazırlanıyor...</p>
+                    
+                    <div class="progress mt-3">
+                        <div id="progressBar" class="progress-bar" role="progressbar" 
+                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            0%
+                        </div>
+                    </div>
+                    
+                    <small class="text-muted mt-2 d-block" id="estimatedTime"></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" style="display: none;">
+            <div class="stats-card text-center">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h3 id="totalProducts">0</h3>
+                        <small>Toplam Ürün</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="validProducts">0</h3>
+                        <small>Geçerli Ürün</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="successRate">0%</h3>
+                        <small>Başarı Oranı</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="avgQuality">0</h3>
+                        <small>Ortalama Kalite</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="fas fa-list"></i> SEO Sonuçları</h3>
+                <div>
+                    <button class="btn btn-success" onclick="downloadCSV()">
+                        <i class="fas fa-download"></i> CSV İndir
+                    </button>
+                    <button class="btn btn-info" onclick="downloadJSON()">
+                        <i class="fas fa-download"></i> JSON İndir
+                    </button>
+                </div>
+            </div>
+
+            <div id="resultsList">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const sites = {{ sites | tojson }};
+        let currentTaskId = null;
+        let currentResults = null;
+
+        // Site seçildiğinde kategorileri güncelle
+        document.getElementById('site').addEventListener('change', function() {
+            const siteKey = this.value;
+            const categorySelect = document.getElementById('category');
+            
+            categorySelect.innerHTML = '<option value="">Kategori seçin...</option>';
+            
+            if (siteKey && sites[siteKey]) {
+                sites[siteKey].categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                    categorySelect.appendChild(option);
+                });
+            }
+        });
+
+        // Form gönderimi
+        document.getElementById('extractForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentTaskId = data.task_id;
+                    showLoading(data);
+                    monitorProgress();
+                } else {
+                    alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+                }
+            } catch (error) {
+                alert('Bağlantı hatası: ' + error.message);
+            }
+        });
+
+        function showLoading(data) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('loadingTitle').textContent = 'İşlem Devam Ediyor...';
+            document.getElementById('loadingMessage').textContent = data.message;
+            document.getElementById('estimatedTime').textContent = 'Tahmini süre: ' + data.estimated_time;
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressBar').textContent = '0%';
+        }
+
+        async function monitorProgress() {
+            if (!currentTaskId) return;
+            
+            try {
+                const response = await fetch(`/status/${currentTaskId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateProgress(data);
+                    
+                    if (data.status === 'completed') {
+                        await loadResults();
+                    } else if (data.status === 'error') {
+                        showError(data.message);
+                    } else {
+                        setTimeout(monitorProgress, 2000);
+                    }
+                } else {
+                    showError('Durum kontrolü başarısız');
+                }
+            } catch (error) {
+                showError('Bağlantı hatası: ' + error.message);
+            }
+        }
+
+        function updateProgress(data) {
+            document.getElementById('loadingMessage').textContent = data.message;
+            document.getElementById('progressBar').style.width = data.progress + '%';
+            document.getElementById('progressBar').textContent = data.progress + '%';
+        }
+
+        async function loadResults() {
+            try {
+                const response = await fetch(`/results/${currentTaskId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentResults = data;
+                    showResults(data);
+                } else {
+                    showError('Sonuçlar yüklenemedi');
+                }
+            } catch (error) {
+                showError('Sonuç yükleme hatası: ' + error.message);
+            }
+        }
+
+        function showResults(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            
+            // İstatistikleri güncelle
+            document.getElementById('totalProducts').textContent = data.total_products;
+            document.getElementById('validProducts').textContent = data.valid_products;
+            document.getElementById('successRate').textContent = 
+                Math.round((data.valid_products / data.total_products) * 100) + '%';
+            
+            const avgQuality = data.results.reduce((sum, r) => sum + r.quality_score, 0) / data.results.length;
+            document.getElementById('avgQuality').textContent = Math.round(avgQuality);
+            
+            // Sonuçları listele
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            
+            data.results.forEach((result, index) => {
+                const qualityClass = result.quality_score >= 80 ? 'quality-high' : 
+                                   result.quality_score >= 60 ? 'quality-medium' : 'quality-low';
+                
+                const card = document.createElement('div');
+                card.className = `card result-card ${qualityClass}`;
+                card.innerHTML = `
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="card-title">${result.product.name || 'Ürün Adı Bilinmiyor'}</h5>
+                                <p class="card-text">
+                                    <strong>Marka:</strong> ${result.product.brand || 'Bilinmiyor'}<br>
+                                    <strong>Fiyat:</strong> ${result.product.price || 'Bilinmiyor'}<br>
+                                    <strong>Primary Keyword:</strong> <span class="badge bg-primary">${result.seo.primary_keyword}</span>
+                                </p>
+                                <div class="mb-2">
+                                    <strong>Keywords:</strong>
+                                    ${result.seo.keywords.slice(0, 5).map(k => 
+                                        `<span class="badge bg-secondary me-1">${k}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="mb-2">
+                                    <div class="badge ${result.quality_score >= 80 ? 'bg-success' : 
+                                                       result.quality_score >= 60 ? 'bg-warning' : 'bg-danger'} fs-6">
+                                        Kalite: ${result.quality_score}/100
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge ${result.is_valid ? 'bg-success' : 'bg-danger'}">
+                                        ${result.is_valid ? 'Geçerli' : 'Geçersiz'}
+                                    </span>
+                                </div>
+                                <small class="text-muted">${result.seo.keywords.length} keyword</small>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <strong>Meta Description:</strong> ${result.seo.meta_description}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultsList.appendChild(card);
+            });
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            alert('Hata: ' + message);
+        }
+
+        function downloadCSV() {
+            if (!currentResults) return;
+            
+            let csv = 'Ürün Adı,Marka,Fiyat,Primary Keyword,Keyword Sayısı,Kalite Skoru,Geçerli,URL\n';
+            
+            currentResults.results.forEach(result => {
+                const product = result.product;
+                const seo = result.seo;
+                csv += `"${product.name || ''}","${product.brand || ''}","${product.price || ''}","${seo.primary_keyword}","${seo.keywords.length}","${result.quality_score}","${result.is_valid}","${product.url || ''}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cosmetic_seo_results_${new Date().getTime()}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadJSON() {
+            if (!currentResults) return;
+            
+            const blob = new Blob([JSON.stringify(currentResults, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cosmetic_seo_results_${new Date().getTime()}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

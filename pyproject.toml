@@ -1,0 +1,37 @@
+[project]
+name = "cosmetic-seo-adk"
+version = "0.1.0"
+description = "Multi-agent cosmetic SEO extractor built with Google Agent Development Kit"
+authors = [
+    {name = "Cosmetic SEO Team", email = "seo@cosmetic-extractor.com"}
+]
+requires-python = ">=3.9"
+dependencies = [
+    "google-adk[all]>=1.0.0",
+    "google-cloud-aiplatform>=1.67.1",
+    "google-generativeai>=0.8.3",
+    "selenium>=4.18.1",
+    "beautifulsoup4>=4.12.3",
+    "requests>=2.31.0",
+    "spacy>=3.7.4",
+    "nltk>=3.8.1",
+    "psycopg2-binary>=2.9.9",
+    "sqlalchemy>=2.0.27",
+    "python-dotenv>=1.0.1",
+    "pydantic>=2.6.1",
+    "loguru>=0.7.2"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*", "tools*", "config*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

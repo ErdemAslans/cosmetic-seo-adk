@@ -1,0 +1,5 @@
+2025-07-08 08:28:15.981 | INFO     | __main__:run_simple_test:170 - 🚀 Basit Kozmetik SEO Çıkarıcı Testi Başlıyor
+2025-07-08 08:28:15.982 | INFO     | __main__:run_simple_test:171 - Bu test ADK olmadan çalışan basit bir sürümdür
+
+2025-07-08 08:28:15.983 | INFO     | __main__:discover_urls:39 - 🔍 Trendyol'dan 3 ürün URL'si arıyorum...
+2025-07-08 08:28:16.258 | ERROR    | __main__:discover_urls:50 - ❌ Sayfa yüklenemedi: 404

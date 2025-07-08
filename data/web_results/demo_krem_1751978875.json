@@ -1,0 +1,81 @@
+[
+  {
+    "product": {
+      "name": "Premium Krem - Anti-Aging Formula",
+      "brand": "BeautyLab",
+      "price": "299.90 TL",
+      "description": "Yeni nesil krem formülü. Premium ingredients ile zenginleştirilmiş.",
+      "category": "krem",
+      "url": "https://demo.com/krem-1"
+    },
+    "seo": {
+      "keywords": [
+        "premium",
+        "anti-aging",
+        "krem",
+        "formula",
+        "beautylab"
+      ],
+      "primary_keyword": "premium",
+      "title": "BeautyLab Premium Krem - Anti-Aging Formula",
+      "meta_description": "Yeni nesil krem formülü. Premium ingredients ile zenginleştirilmiş.",
+      "slug": "premium",
+      "focus_keyphrase": "premium"
+    },
+    "quality_score": 85,
+    "is_valid": true,
+    "processed_at": 1751978874.2142684
+  },
+  {
+    "product": {
+      "name": "Natural Krem with Vitamin C",
+      "brand": "GreenBeauty",
+      "price": "189.90 TL",
+      "description": "Doğal içerikli krem. Vitamin C ve E kompleksi içerir.",
+      "category": "krem",
+      "url": "https://demo.com/krem-2"
+    },
+    "seo": {
+      "keywords": [
+        "krem",
+        "greenbeauty",
+        "vitamin",
+        "natural"
+      ],
+      "primary_keyword": "krem",
+      "title": "GreenBeauty Natural Krem with Vitamin C",
+      "meta_description": "Doğal içerikli krem. Vitamin C ve E kompleksi içerir.",
+      "slug": "krem",
+      "focus_keyphrase": "krem"
+    },
+    "quality_score": 90,
+    "is_valid": true,
+    "processed_at": 1751978874.7153342
+  },
+  {
+    "product": {
+      "name": "Professional Krem Solution",
+      "brand": "ProCare",
+      "price": "449.90 TL",
+      "description": "Profesyonel kalitede krem. Dermatolog tavsiyeli formül.",
+      "category": "krem",
+      "url": "https://demo.com/krem-3"
+    },
+    "seo": {
+      "keywords": [
+        "solution",
+        "krem",
+        "procare",
+        "professional"
+      ],
+      "primary_keyword": "solution",
+      "title": "ProCare Professional Krem Solution",
+      "meta_description": "Profesyonel kalitede krem. Dermatolog tavsiyeli formül.",
+      "slug": "solution",
+      "focus_keyphrase": "solution"
+    },
+    "quality_score": 95,
+    "is_valid": true,
+    "processed_at": 1751978875.2159119
+  }
+]
