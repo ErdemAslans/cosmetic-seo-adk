@@ -432,9 +432,17 @@ class StorageAgent(LlmAgent):
             """
         )
     
-    async def process_storage_request(self, product_data: Dict[str, Any], seo_data: Dict[str, Any], validation_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process a data storage request"""
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Main run method for the storage agent"""
         try:
+            # Extract data from input
+            product_data = input_data.get('product_data')
+            seo_data = input_data.get('seo_data')
+            validation_data = input_data.get('validation_data')
+            
+            if not product_data or not seo_data or not validation_data:
+                return {"error": "product_data, seo_data, and validation_data are required"}
+            
             # Check if data passed quality validation
             is_valid = validation_data.get("is_valid", False)
             quality_score = validation_data.get("quality_score", 0)
@@ -446,59 +454,57 @@ class StorageAgent(LlmAgent):
                     "recommendation": "Improve data quality before storage"
                 }
             
-            prompt = f"""
-            Store validated cosmetic product and SEO data:
-            Product Data: {product_data}
-            SEO Data: {seo_data}
-            Validation Data: {validation_data}
+            # Store to database
+            database_tool = self.tools[0]  # DatabaseStorageTool
+            database_result = await database_tool(product_data, seo_data, validation_data)
             
-            Please perform comprehensive data storage:
+            if "error" in database_result:
+                logger.warning(f"Database storage failed: {database_result['error']}")
+                database_result = {"success": False, "error": database_result['error']}
             
-            1. Store to database using database_storage tool:
-               - Save product information to products table
-               - Save SEO data to seo_data table
-               - Save validation results to quality_validations table
-               - Ensure referential integrity
+            # Store to files
+            file_tool = self.tools[1]  # FileStorageTool
+            file_result = await file_tool(product_data, seo_data, validation_data)
             
-            2. Store to files using file_storage tool:
-               - Append to CSV export file for analysis
-               - Create individual JSON file for detailed record
-               - Ensure proper file organization
+            if "error" in file_result:
+                return file_result
             
-            3. Confirm successful storage:
-               - Verify database storage completion
-               - Confirm file creation
-               - Provide storage paths and references
-            
-            Return comprehensive storage confirmation with all storage locations.
-            """
-            
-            response = await self.run_async(prompt)
-            return response
+            # Combine results
+            return {
+                "success": True,
+                "database_storage": database_result,
+                "file_storage": file_result,
+                "quality_score": quality_score,
+                "storage_summary": {
+                    "csv_path": file_result.get('csv_path'),
+                    "json_path": file_result.get('json_path'),
+                    "database_stored": database_result.get('success', False)
+                }
+            }
             
         except Exception as e:
             logger.error(f"Storage Agent error: {e}")
             return {"error": str(e)}
     
+    async def run_async(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Async run method for compatibility"""
+        return await self.run(input_data)
+    
+    async def process_storage_request(self, product_data: Dict[str, Any], seo_data: Dict[str, Any], validation_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a data storage request (legacy method)"""
+        return await self.run({
+            'product_data': product_data,
+            'seo_data': seo_data,
+            'validation_data': validation_data
+        })
+    
     async def generate_summary_report(self) -> Dict[str, Any]:
         """Generate a summary report of stored data"""
         try:
-            prompt = """
-            Generate a comprehensive summary report of all stored cosmetic product data.
-            
-            Use the generate_report tool to create a detailed report including:
-            - Total number of products and SEO entries
-            - Validation rates and quality metrics
-            - Site-wise breakdown of products
-            - Top performing keywords
-            - Quality score distribution
-            - Processing statistics
-            
-            Provide insights and recommendations based on the data.
-            """
-            
-            response = await self.run_async(prompt)
-            return response
+            # Use the reporting tool directly
+            reporting_tool = self.tools[2]  # ReportingTool
+            result = await reporting_tool("summary")
+            return result
             
         except Exception as e:
             logger.error(f"Report generation error: {e}")

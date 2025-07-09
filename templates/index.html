@@ -3,64 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎭 Cosmetic SEO Extractor</title>
+    <title>🤖 Cosmetic SEO Extractor - AI Powered</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         .card {
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             backdrop-filter: blur(10px);
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(255,255,255,0.2);
         }
         .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
             border: none;
-            border-radius: 25px;
-            padding: 12px 30px;
-            font-weight: bold;
+            border-radius: 30px;
+            padding: 12px 35px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .progress {
-            height: 25px;
-            border-radius: 15px;
+            height: 30px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            border-radius: 20px;
+            font-weight: 600;
         }
         .result-card {
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
+            margin-bottom: 25px;
+            border-left: 5px solid #2a5298;
+            transition: all 0.3s ease;
         }
-        .quality-high { border-left-color: #28a745; }
-        .quality-medium { border-left-color: #ffc107; }
-        .quality-low { border-left-color: #dc3545; }
+        .result-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .quality-high { border-left-color: #00b894; }
+        .quality-medium { border-left-color: #fdcb6e; }
+        .quality-low { border-left-color: #d63031; }
         #loading {
             display: none;
         }
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .agent-status {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-top: 20px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .agent-box {
+            flex: 0 0 30%;
+            margin: 5px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 14px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .agent-box.active {
+            border-color: #2a5298;
+            background: #e3f2fd;
+            animation: pulse 1s infinite;
+        }
+        .agent-box.completed {
+            border-color: #00b894;
+            background: #d1f2eb;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .loading-animation {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        .loading-animation::before,
+        .loading-animation::after {
+            content: '';
+            position: absolute;
+            border: 4px solid #2a5298;
+            border-radius: 50%;
+            animation: loader 2s infinite ease-in-out;
+        }
+        .loading-animation::before {
+            width: 60px;
+            height: 60px;
+            top: 10px;
+            left: 10px;
+            animation-delay: -0.5s;
+        }
+        .loading-animation::after {
+            width: 40px;
+            height: 40px;
+            top: 20px;
+            left: 20px;
+        }
+        @keyframes loader {
+            0%, 100% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 0;
+            }
         }
         .stats-card {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        .stats-card h3 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .ai-badge {
+            background: linear-gradient(45deg, #e74c3c, #e67e22);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .demo-badge {
+            background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+            color: white;
+            padding: 3px 10px;
             border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
+            font-size: 11px;
+            margin-left: 10px;
+            display: inline-block;
         }
     </style>
 </head>
@@ -68,63 +173,79 @@
     <div class="container my-5">
         <!-- Header -->
         <div class="text-center mb-5">
-            <h1 class="display-4 text-white mb-3">
-                🎭 <strong>Cosmetic SEO Extractor</strong>
+            <h1 class="display-3 text-white mb-3">
+                🤖 <strong>Cosmetic SEO Extractor</strong>
             </h1>
-            <p class="lead text-white">
-                Kozmetik ürünlerinden profesyonel SEO verilerini çıkarın
+            <p class="lead text-white mb-2">
+                Google Gemini AI destekli kozmetik ürün SEO analiz sistemi
             </p>
+            <div class="ai-badge">
+                <i class="fas fa-brain"></i> Powered by Google ADK & Gemini Pro
+            </div>
         </div>
 
         <!-- Main Form -->
         <div class="row justify-content-center">
-            <div class="col-lg-8">
+            <div class="col-lg-10">
                 <div class="card">
                     <div class="card-body p-5">
                         <h3 class="card-title text-center mb-4">
-                            <i class="fas fa-search"></i> SEO Analizi Başlat
+                            <i class="fas fa-rocket"></i> AI SEO Analizi Başlat
                         </h3>
                         
                         <form id="extractForm">
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="site" class="form-label">
                                         <i class="fas fa-store"></i> E-ticaret Sitesi
                                     </label>
-                                    <select class="form-select" id="site" name="site" required>
+                                    <select class="form-select form-select-lg" id="site" name="site" required>
                                         <option value="">Site seçin...</option>
+                                        <option value="demo">🎭 Demo Mode</option>
                                         {% for site_key, site_info in sites.items() %}
                                         <option value="{{ site_key }}">{{ site_info.name }}</option>
                                         {% endfor %}
                                     </select>
+                                    <small class="text-muted mt-1 d-block" id="siteFeatures"></small>
                                 </div>
                                 
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="category" class="form-label">
                                         <i class="fas fa-tags"></i> Ürün Kategorisi
                                     </label>
-                                    <select class="form-select" id="category" name="category" required>
+                                    <select class="form-select form-select-lg" id="category" name="category" required>
                                         <option value="">Önce site seçin...</option>
                                     </select>
                                 </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="max_products" class="form-label">
+                                        <i class="fas fa-hashtag"></i> Maksimum Ürün
+                                    </label>
+                                    <input type="number" class="form-control form-control-lg" id="max_products" 
+                                           name="max_products" value="10" min="1" max="50" required>
+                                </div>
                             </div>
                             
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="max_products" class="form-label">
-                                        <i class="fas fa-hashtag"></i> Maksimum Ürün Sayısı
-                                    </label>
-                                    <input type="number" class="form-control" id="max_products" 
-                                           name="max_products" value="20" min="1" max="100" required>
-                                </div>
-                                
-                                <div class="col-md-6 mb-3 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="fas fa-rocket"></i> Analizi Başlat
-                                    </button>
-                                </div>
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-magic"></i> AI Agent'ları Başlat
+                                </button>
                             </div>
                         </form>
+
+                        <!-- AI Features -->
+                        <div class="mt-5 p-4 bg-light rounded-3">
+                            <h5 class="mb-3"><i class="fas fa-robot"></i> AI Agent Özellikleri</h5>
+                            <ul class="feature-list">
+                                <li>🔍 <strong>Scout Agent:</strong> Akıllı URL keşfi ve kategori analizi</li>
+                                <li>🌐 <strong>Scraper Agent:</strong> Gelişmiş veri çıkarma ve temizleme</li>
+                                <li>🔬 <strong>Analyzer Agent:</strong> NLP tabanlı içerik ve bileşen analizi</li>
+                                <li>✨ <strong>SEO Agent:</strong> AI destekli anahtar kelime ve meta veri üretimi</li>
+                                <li>🎯 <strong>Quality Agent:</strong> SEO kalite değerlendirmesi ve optimizasyon</li>
+                                <li>💾 <strong>Storage Agent:</strong> Akıllı veri organizasyonu ve depolama</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -134,18 +255,52 @@
         <div id="loading" class="text-center my-5">
             <div class="card">
                 <div class="card-body p-5">
-                    <div class="loading-spinner mx-auto mb-3"></div>
-                    <h4 id="loadingTitle">İşlem Başlatılıyor...</h4>
-                    <p id="loadingMessage">Lütfen bekleyin, sistem hazırlanıyor...</p>
+                    <div class="loading-animation"></div>
+                    <h4 id="loadingTitle">🤖 AI Agent'lar Çalışıyor...</h4>
+                    <p id="loadingMessage" class="lead">Sistem başlatılıyor...</p>
                     
-                    <div class="progress mt-3">
-                        <div id="progressBar" class="progress-bar" role="progressbar" 
-                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress mt-4">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                             0%
                         </div>
                     </div>
                     
-                    <small class="text-muted mt-2 d-block" id="estimatedTime"></small>
+                    <!-- Agent Status Grid -->
+                    <div class="agent-status" id="agentStatus">
+                        <div class="agent-box" id="agent-scout">
+                            <i class="fas fa-search fa-2x mb-2"></i><br>
+                            <strong>Scout</strong><br>
+                            <span class="status-text">⏳ Bekliyor</span>
+                        </div>
+                        <div class="agent-box" id="agent-scraper">
+                            <i class="fas fa-globe fa-2x mb-2"></i><br>
+                            <strong>Scraper</strong><br>
+                            <span class="status-text">⏳ Bekliyor</span>
+                        </div>
+                        <div class="agent-box" id="agent-analyzer">
+                            <i class="fas fa-microscope fa-2x mb-2"></i><br>
+                            <strong>Analyzer</strong><br>
+                            <span class="status-text">⏳ Bekliyor</span>
+                        </div>
+                        <div class="agent-box" id="agent-seo">
+                            <i class="fas fa-sparkles fa-2x mb-2"></i><br>
+                            <strong>SEO</strong><br>
+                            <span class="status-text">⏳ Bekliyor</span>
+                        </div>
+                        <div class="agent-box" id="agent-quality">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i><br>
+                            <strong>Quality</strong><br>
+                            <span class="status-text">⏳ Bekliyor</span>
+                        </div>
+                        <div class="agent-box" id="agent-storage">
+                            <i class="fas fa-database fa-2x mb-2"></i><br>
+                            <strong>Storage</strong><br>
+                            <span class="status-text">⏳ Bekliyor</span>
+                        </div>
+                    </div>
+                    
+                    <small class="text-muted mt-3 d-block" id="processingTime"></small>
                 </div>
             </div>
         </div>
@@ -163,24 +318,24 @@
                         <small>Geçerli Ürün</small>
                     </div>
                     <div class="col-md-3">
-                        <h3 id="successRate">0%</h3>
-                        <small>Başarı Oranı</small>
-                    </div>
-                    <div class="col-md-3">
                         <h3 id="avgQuality">0</h3>
                         <small>Ortalama Kalite</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 id="processingTimeResult">0s</h3>
+                        <small>İşlem Süresi</small>
                     </div>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3><i class="fas fa-list"></i> SEO Sonuçları</h3>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3><i class="fas fa-list"></i> AI SEO Sonuçları</h3>
                 <div>
-                    <button class="btn btn-success" onclick="downloadCSV()">
-                        <i class="fas fa-download"></i> CSV İndir
+                    <button class="btn btn-success btn-lg" id="downloadCSV">
+                        <i class="fas fa-file-csv"></i> CSV İndir
                     </button>
-                    <button class="btn btn-info" onclick="downloadJSON()">
-                        <i class="fas fa-download"></i> JSON İndir
+                    <button class="btn btn-info btn-lg" id="downloadJSON">
+                        <i class="fas fa-file-code"></i> JSON İndir
                     </button>
                 </div>
             </div>
@@ -196,22 +351,35 @@
     <script>
         const sites = {{ sites | tojson }};
         let currentTaskId = null;
-        let currentResults = null;
+        let startTime = null;
 
         // Site seçildiğinde kategorileri güncelle
         document.getElementById('site').addEventListener('change', function() {
             const siteKey = this.value;
             const categorySelect = document.getElementById('category');
+            const featuresElement = document.getElementById('siteFeatures');
             
             categorySelect.innerHTML = '<option value="">Kategori seçin...</option>';
+            featuresElement.textContent = '';
             
-            if (siteKey && sites[siteKey]) {
+            if (siteKey === 'demo') {
+                // Demo kategorileri
+                const demoCategories = ['makyaj', 'cilt bakımı', 'parfüm', 'saç bakımı'];
+                demoCategories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                    categorySelect.appendChild(option);
+                });
+                featuresElement.innerHTML = '🎭 <em>Demo mod - AI simülasyonu</em>';
+            } else if (siteKey && sites[siteKey]) {
                 sites[siteKey].categories.forEach(category => {
                     const option = document.createElement('option');
                     option.value = category;
                     option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
                     categorySelect.appendChild(option);
                 });
+                featuresElement.textContent = sites[siteKey].ai_features || '';
             }
         });
 
@@ -220,6 +388,7 @@
             e.preventDefault();
             
             const formData = new FormData(this);
+            startTime = Date.now();
             
             try {
                 const response = await fetch('/extract', {
@@ -231,24 +400,28 @@
                 
                 if (response.ok) {
                     currentTaskId = data.task_id;
-                    showLoading(data);
+                    showLoading();
                     monitorProgress();
                 } else {
-                    alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+                    alert('❌ Hata: ' + (data.error || 'Bilinmeyen hata'));
                 }
             } catch (error) {
-                alert('Bağlantı hatası: ' + error.message);
+                alert('❌ Bağlantı hatası: ' + error.message);
             }
         });
 
-        function showLoading(data) {
+        function showLoading() {
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').style.display = 'none';
-            document.getElementById('loadingTitle').textContent = 'İşlem Devam Ediyor...';
-            document.getElementById('loadingMessage').textContent = data.message;
-            document.getElementById('estimatedTime').textContent = 'Tahmini süre: ' + data.estimated_time;
+            document.getElementById('loadingTitle').textContent = '🤖 AI Agent\'lar Çalışıyor...';
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('progressBar').textContent = '0%';
+            
+            // Reset agent statuses
+            document.querySelectorAll('.agent-box').forEach(box => {
+                box.classList.remove('active', 'completed');
+                box.querySelector('.status-text').textContent = '⏳ Bekliyor';
+            });
         }
 
         async function monitorProgress() {
@@ -262,11 +435,11 @@
                     updateProgress(data);
                     
                     if (data.status === 'completed') {
-                        await loadResults();
+                        showResults(data);
                     } else if (data.status === 'error') {
                         showError(data.message);
                     } else {
-                        setTimeout(monitorProgress, 2000);
+                        setTimeout(monitorProgress, 1000);
                     }
                 } else {
                     showError('Durum kontrolü başarısız');
@@ -277,24 +450,36 @@
         }
 
         function updateProgress(data) {
+            // Update progress bar
             document.getElementById('loadingMessage').textContent = data.message;
             document.getElementById('progressBar').style.width = data.progress + '%';
             document.getElementById('progressBar').textContent = data.progress + '%';
-        }
-
-        async function loadResults() {
-            try {
-                const response = await fetch(`/results/${currentTaskId}`);
-                const data = await response.json();
-                
-                if (response.ok) {
-                    currentResults = data;
-                    showResults(data);
-                } else {
-                    showError('Sonuçlar yüklenemedi');
+            
+            // Update processing time
+            if (startTime) {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('processingTime').textContent = `İşlem süresi: ${elapsed} saniye`;
+            }
+            
+            // Update agent statuses
+            if (data.ai_agents) {
+                for (const [agent, status] of Object.entries(data.ai_agents)) {
+                    const agentBox = document.getElementById(`agent-${agent}`);
+                    if (agentBox) {
+                        const statusText = agentBox.querySelector('.status-text');
+                        statusText.textContent = status;
+                        
+                        // Update visual state
+                        agentBox.classList.remove('active', 'completed');
+                        if (status.includes('🔄') || status.includes('🔍') || status.includes('🌐') || 
+                            status.includes('🔬') || status.includes('✨') || status.includes('🎯') || 
+                            status.includes('💾')) {
+                            agentBox.classList.add('active');
+                        } else if (status.includes('✅')) {
+                            agentBox.classList.add('completed');
+                        }
+                    }
                 }
-            } catch (error) {
-                showError('Sonuç yükleme hatası: ' + error.message);
             }
         }
 
@@ -302,106 +487,117 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('results').style.display = 'block';
             
-            // İstatistikleri güncelle
-            document.getElementById('totalProducts').textContent = data.total_products;
-            document.getElementById('validProducts').textContent = data.valid_products;
-            document.getElementById('successRate').textContent = 
-                Math.round((data.valid_products / data.total_products) * 100) + '%';
+            // Update stats
+            const stats = data.stats || {};
+            document.getElementById('totalProducts').textContent = stats.total_products || 0;
+            document.getElementById('validProducts').textContent = stats.valid_products || 0;
+            document.getElementById('avgQuality').textContent = Math.round(stats.avg_quality_score || 0);
+            document.getElementById('processingTimeResult').textContent = 
+                Math.round(stats.processing_time || 0) + 's';
             
-            const avgQuality = data.results.reduce((sum, r) => sum + r.quality_score, 0) / data.results.length;
-            document.getElementById('avgQuality').textContent = Math.round(avgQuality);
-            
-            // Sonuçları listele
+            // Display results
             const resultsList = document.getElementById('resultsList');
             resultsList.innerHTML = '';
             
-            data.results.forEach((result, index) => {
-                const qualityClass = result.quality_score >= 80 ? 'quality-high' : 
-                                   result.quality_score >= 60 ? 'quality-medium' : 'quality-low';
-                
-                const card = document.createElement('div');
-                card.className = `card result-card ${qualityClass}`;
-                card.innerHTML = `
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h5 class="card-title">${result.product.name || 'Ürün Adı Bilinmiyor'}</h5>
-                                <p class="card-text">
-                                    <strong>Marka:</strong> ${result.product.brand || 'Bilinmiyor'}<br>
-                                    <strong>Fiyat:</strong> ${result.product.price || 'Bilinmiyor'}<br>
-                                    <strong>Primary Keyword:</strong> <span class="badge bg-primary">${result.seo.primary_keyword}</span>
-                                </p>
-                                <div class="mb-2">
-                                    <strong>Keywords:</strong>
-                                    ${result.seo.keywords.slice(0, 5).map(k => 
-                                        `<span class="badge bg-secondary me-1">${k}</span>`
-                                    ).join('')}
-                                </div>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="mb-2">
-                                    <div class="badge ${result.quality_score >= 80 ? 'bg-success' : 
-                                                       result.quality_score >= 60 ? 'bg-warning' : 'bg-danger'} fs-6">
-                                        Kalite: ${result.quality_score}/100
+            if (data.results && data.results.length > 0) {
+                data.results.forEach((result, index) => {
+                    const qualityClass = result.quality_score >= 80 ? 'quality-high' : 
+                                       result.quality_score >= 60 ? 'quality-medium' : 'quality-low';
+                    
+                    const card = document.createElement('div');
+                    card.className = `card result-card ${qualityClass}`;
+                    card.innerHTML = `
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5 class="card-title">
+                                        ${result.product.name || 'Ürün Adı'}
+                                        ${result.product.ai_analyzed ? '<span class="demo-badge">AI Demo</span>' : ''}
+                                    </h5>
+                                    <p class="card-text">
+                                        <strong>Marka:</strong> ${result.product.brand || 'Bilinmiyor'}<br>
+                                        <strong>Fiyat:</strong> ${result.product.price || 'Bilinmiyor'}<br>
+                                        <strong>Kategori:</strong> ${result.product.category || 'Bilinmiyor'}
+                                    </p>
+                                    <div class="mb-3">
+                                        <strong>AI Anahtar Kelimeler (${result.seo.keywords ? result.seo.keywords.length : 0}):</strong><br>
+                                        ${result.seo.keywords ? result.seo.keywords.slice(0, 7).map(k => 
+                                            `<span class="badge bg-primary me-1 mb-1">${k}</span>`
+                                        ).join('') : ''}
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">
+                                            <strong>SEO Başlığı:</strong> ${result.seo.title || ''}<br>
+                                            <strong>Meta Açıklama:</strong> ${result.seo.meta_description || ''}
+                                        </small>
                                     </div>
                                 </div>
-                                <div class="mb-2">
-                                    <span class="badge ${result.is_valid ? 'bg-success' : 'bg-danger'}">
-                                        ${result.is_valid ? 'Geçerli' : 'Geçersiz'}
-                                    </span>
+                                <div class="col-md-4 text-end">
+                                    <div class="mb-3">
+                                        <div class="badge ${result.quality_score >= 80 ? 'bg-success' : 
+                                                           result.quality_score >= 60 ? 'bg-warning' : 'bg-danger'} fs-4">
+                                            Kalite: ${result.quality_score}/100
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge ${result.is_valid ? 'bg-success' : 'bg-danger'}">
+                                            ${result.is_valid ? '✅ Geçerli' : '❌ Geçersiz'}
+                                        </span>
+                                    </div>
+                                    ${result.ai_insights ? `
+                                        <div class="mt-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-brain"></i> AI Model: ${result.ai_insights.ai_model || 'gemini-1.5-pro'}<br>
+                                                <i class="fas fa-chart-bar"></i> Optimizasyon: ${result.ai_insights.optimization_level || 'standart'}
+                                            </small>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                                <small class="text-muted">${result.seo.keywords.length} keyword</small>
                             </div>
                         </div>
-                        <div class="row mt-2">
-                            <div class="col-12">
-                                <small class="text-muted">
-                                    <strong>Meta Description:</strong> ${result.seo.meta_description}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                resultsList.appendChild(card);
-            });
+                    `;
+                    resultsList.appendChild(card);
+                });
+            }
+            
+            // Setup download buttons
+            document.getElementById('downloadCSV').onclick = () => downloadResults('csv');
+            document.getElementById('downloadJSON').onclick = () => downloadResults('json');
         }
 
         function showError(message) {
             document.getElementById('loading').style.display = 'none';
-            alert('Hata: ' + message);
+            alert('❌ ' + message);
         }
 
-        function downloadCSV() {
-            if (!currentResults) return;
+        async function downloadResults(format) {
+            if (!currentTaskId) return;
             
-            let csv = 'Ürün Adı,Marka,Fiyat,Primary Keyword,Keyword Sayısı,Kalite Skoru,Geçerli,URL\n';
-            
-            currentResults.results.forEach(result => {
-                const product = result.product;
-                const seo = result.seo;
-                csv += `"${product.name || ''}","${product.brand || ''}","${product.price || ''}","${seo.primary_keyword}","${seo.keywords.length}","${result.quality_score}","${result.is_valid}","${product.url || ''}"\n`;
-            });
-            
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `cosmetic_seo_results_${new Date().getTime()}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+            try {
+                const response = await fetch(`/download/${currentTaskId}/${format}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `cosmetic_seo_ai_results_${Date.now()}.${format}`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('❌ İndirme başarısız');
+                }
+            } catch (error) {
+                alert('❌ İndirme hatası: ' + error.message);
+            }
         }
 
-        function downloadJSON() {
-            if (!currentResults) return;
-            
-            const blob = new Blob([JSON.stringify(currentResults, null, 2)], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `cosmetic_seo_results_${new Date().getTime()}.json`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
+        // Check agent status on load
+        fetch('/agent-status')
+            .then(res => res.json())
+            .then(data => {
+                console.log('AI Agent System Status:', data);
+            })
+            .catch(err => console.error('Agent status check failed:', err));
     </script>
 </body>
 </html>

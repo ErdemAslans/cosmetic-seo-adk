@@ -6,6 +6,7 @@ Generates comprehensive SEO metadata for cosmetic products using advanced NLP
 import re
 from typing import Dict, Any, Optional, List, Tuple
 from collections import Counter
+from datetime import datetime
 import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 import nltk
@@ -447,44 +448,66 @@ class SEOAgent(LlmAgent):
             """
         )
     
-    async def process_seo_request(self, analyzed_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process an SEO optimization request"""
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Main run method for the SEO agent"""
         try:
-            prompt = f"""
-            Generate comprehensive SEO metadata for this cosmetic product:
-            Analyzed Data: {analyzed_data}
+            # Extract analyzed data from input
+            analyzed_data = input_data.get('analyzed_data')
             
-            Please perform the following SEO optimization:
+            if not analyzed_data:
+                return {"error": "analyzed_data is required"}
             
-            1. Extract keywords using keyword_extraction tool:
-               - Use cleaned product data and extracted cosmetic terms
-               - Focus on cosmetic industry keywords
-               - Include product type, ingredients, and benefits
-               - Generate primary, secondary, and long-tail keywords
-               - Calculate keyword density metrics
+            # Extract required data components
+            product_data = analyzed_data.get('cleaned_product')
+            extracted_terms = analyzed_data.get('extracted_terms', {})
             
-            2. Generate SEO metadata using seo_metadata tool:
-               - Create compelling SEO title (max 60 chars)
-               - Write descriptive meta description (max 160 chars)
-               - Generate URL-friendly slug
-               - Create focus keyphrase
+            if not product_data:
+                return {"error": "cleaned_product data is required"}
             
-            3. Ensure optimization for:
-               - Product discoverability
-               - Brand awareness
-               - Ingredient-based searches
-               - Skin type/concern searches
-               - Local market relevance
+            # Use the keyword extraction tool
+            keyword_tool = self.tools[0]  # KeywordExtractionTool
+            keyword_result = await keyword_tool(product_data, extracted_terms)
             
-            Return comprehensive SEO data ready for quality validation.
-            """
+            if "error" in keyword_result:
+                return keyword_result
             
-            response = await self.run_async(prompt)
-            return response
+            # Use the SEO metadata tool
+            metadata_tool = self.tools[1]  # SEOMetadataTool
+            metadata_result = await metadata_tool(
+                product_data, 
+                keyword_result['keywords'], 
+                keyword_result['primary_keyword']
+            )
+            
+            if "error" in metadata_result:
+                return metadata_result
+            
+            # Combine results
+            return {
+                "keywords": keyword_result['keywords'],
+                "primary_keyword": keyword_result['primary_keyword'],
+                "secondary_keywords": keyword_result['secondary_keywords'],
+                "long_tail_keywords": keyword_result['long_tail_keywords'],
+                "keyword_density": keyword_result['keyword_density'],
+                "title": metadata_result['title'],
+                "meta_description": metadata_result['meta_description'],
+                "slug": metadata_result['slug'],
+                "focus_keyphrase": metadata_result['focus_keyphrase'],
+                "product_url": product_data.get('url'),
+                "generated_at": datetime.now()
+            }
             
         except Exception as e:
             logger.error(f"SEO Agent error: {e}")
             return {"error": str(e)}
+    
+    async def run_async(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Async run method for compatibility"""
+        return await self.run(input_data)
+    
+    async def process_seo_request(self, analyzed_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process an SEO optimization request (legacy method)"""
+        return await self.run({'analyzed_data': analyzed_data})
 
 
 # Agent factory function for ADK orchestration

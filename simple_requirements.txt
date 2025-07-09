@@ -1,6 +1,0 @@
-# Minimal requirements for simple test
-aiohttp==3.9.3
-beautifulsoup4==4.12.3
-lxml==5.1.0
-loguru==0.7.2
-python-dotenv==1.0.1

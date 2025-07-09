@@ -52,7 +52,7 @@ class CosmeticSEOOrchestrator:
         try:
             # Step 1: Scout - Discover product URLs
             logger.info(f"Step 1: Discovering URLs from {site_name}")
-            scout_result = await self.scout_agent.process_discovery_request(site_name, max_products)
+            scout_result = await self.scout_agent.run(site_name, max_products)
             
             if "error" in scout_result:
                 logger.error(f"Scout failed for {site_name}: {scout_result['error']}")
@@ -115,7 +115,7 @@ class CosmeticSEOOrchestrator:
         """Process a single product through the complete pipeline"""
         try:
             # Step 2: Scraper - Extract product data
-            scraper_result = await self.scraper_agent.process_scraping_request(url, site_name)
+            scraper_result = await self.scraper_agent.run({'url': url, 'site_name': site_name})
             
             if "error" in scraper_result:
                 logger.warning(f"Scraping failed for {url}: {scraper_result['error']}")
@@ -126,14 +126,14 @@ class CosmeticSEOOrchestrator:
                 return {"url": url, "error": "No product data extracted"}
             
             # Step 3: Analyzer - Clean and analyze data
-            analyzer_result = await self.analyzer_agent.process_analysis_request(product_data)
+            analyzer_result = await self.analyzer_agent.run({'product_data': product_data})
             
             if "error" in analyzer_result:
                 logger.warning(f"Analysis failed for {url}: {analyzer_result['error']}")
                 return {"url": url, "error": analyzer_result["error"]}
             
             # Step 4: SEO Agent - Generate SEO metadata
-            seo_result = await self.seo_agent.process_seo_request(analyzer_result)
+            seo_result = await self.seo_agent.run({'analyzed_data': analyzer_result})
             
             if "error" in seo_result:
                 logger.warning(f"SEO generation failed for {url}: {seo_result['error']}")
@@ -141,18 +141,22 @@ class CosmeticSEOOrchestrator:
             
             # Step 5: Quality Agent - Validate quality
             extracted_terms = analyzer_result.get("extracted_terms", {})
-            quality_result = await self.quality_agent.process_quality_validation(
-                product_data, seo_result.get("seo_data", {}), extracted_terms
-            )
+            quality_result = await self.quality_agent.run({
+                'product_data': product_data,
+                'seo_data': seo_result.get('seo_data', {}),
+                'extracted_terms': extracted_terms
+            })
             
             if "error" in quality_result:
                 logger.warning(f"Quality validation failed for {url}: {quality_result['error']}")
                 return {"url": url, "error": quality_result["error"]}
             
             # Step 6: Storage Agent - Store validated data
-            storage_result = await self.storage_agent.process_storage_request(
-                product_data, seo_result.get("seo_data", {}), quality_result
-            )
+            storage_result = await self.storage_agent.run({
+                'product_data': product_data,
+                'seo_data': seo_result.get('seo_data', {}),
+                'validation_data': quality_result
+            })
             
             if "error" in storage_result:
                 logger.warning(f"Storage failed for {url}: {storage_result['error']}")

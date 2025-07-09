@@ -384,46 +384,61 @@ class QualityAgent(LlmAgent):
             """
         )
     
-    async def process_quality_validation(self, product_data: Dict[str, Any], seo_data: Dict[str, Any], extracted_terms: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Process a quality validation request"""
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Main run method for the quality agent"""
         try:
-            prompt = f"""
-            Validate the SEO data quality for this cosmetic product:
-            Product Data: {product_data}
-            SEO Data: {seo_data}
-            Extracted Terms: {extracted_terms or {}}
+            # Extract data from input
+            product_data = input_data.get('product_data')
+            seo_data = input_data.get('seo_data')
+            extracted_terms = input_data.get('extracted_terms', {})
             
-            Please perform comprehensive quality validation:
+            if not product_data or not seo_data:
+                return {"error": "product_data and seo_data are required"}
             
-            1. Technical SEO validation using seo_quality_validation tool:
-               - Check character limits for title, meta description, slug
-               - Validate keyword count and relevance
-               - Check for duplicates and over-optimization
-               - Calculate overall quality score
+            # Use the quality validation tool
+            quality_tool = self.tools[0]  # SEOQualityValidationTool
+            quality_result = await quality_tool(product_data, seo_data)
             
-            2. Cosmetic industry validation using cosmetic_seo_best_practices tool:
-               - Verify ingredient inclusion in keywords
-               - Check skin type targeting
-               - Validate product type clarity
-               - Assess brand presence and benefit highlighting
-               - Check market optimization
+            if "error" in quality_result:
+                return quality_result
             
-            3. Provide comprehensive assessment:
-               - Overall quality score
-               - Critical errors that must be fixed
-               - Warnings and improvement suggestions
-               - Cosmetic industry compliance status
-               - Readiness for publication
+            # Use the best practices tool
+            best_practices_tool = self.tools[1]  # CosmeticSEOBestPracticesTool
+            best_practices_result = await best_practices_tool(product_data, seo_data, extracted_terms)
             
-            Return detailed validation results with actionable recommendations.
-            """
+            if "error" in best_practices_result:
+                return best_practices_result
             
-            response = await self.run_async(prompt)
-            return response
+            # Combine results
+            return {
+                "is_valid": quality_result['is_valid'],
+                "errors": quality_result['errors'],
+                "warnings": quality_result['warnings'],
+                "severity": quality_result['severity'],
+                "quality_score": quality_result['quality_score'],
+                "recommendations": quality_result['recommendations'],
+                "best_practices_score": best_practices_result['best_practices_score'],
+                "total_checks": best_practices_result['total_checks'],
+                "percentage": best_practices_result['percentage'],
+                "cosmetic_seo_compliant": best_practices_result['cosmetic_seo_compliant'],
+                "best_practices_recommendations": best_practices_result['recommendations']
+            }
             
         except Exception as e:
             logger.error(f"Quality Agent error: {e}")
             return {"error": str(e)}
+    
+    async def run_async(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Async run method for compatibility"""
+        return await self.run(input_data)
+    
+    async def process_quality_validation(self, product_data: Dict[str, Any], seo_data: Dict[str, Any], extracted_terms: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Process a quality validation request (legacy method)"""
+        return await self.run({
+            'product_data': product_data,
+            'seo_data': seo_data,
+            'extracted_terms': extracted_terms or {}
+        })
 
 
 # Agent factory function for ADK orchestration

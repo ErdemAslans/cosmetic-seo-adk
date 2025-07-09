@@ -267,34 +267,33 @@ class ScraperAgent(LlmAgent):
             """
         )
     
-    async def process_scraping_request(self, url: str, site_name: str) -> Dict[str, Any]:
-        """Process a product scraping request"""
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Main run method for the scraper agent"""
         try:
-            prompt = f"""
-            Extract detailed product information from this cosmetic product URL:
-            URL: {url}
-            Site: {site_name}
+            # Extract URL and site name from input
+            url = input_data.get('url')
+            site_name = input_data.get('site_name')
             
-            Use the product_scraping tool to extract comprehensive product data.
-            Make sure to get:
-            1. Complete product name and brand
-            2. Price information
-            3. Detailed product description
-            4. Full ingredients list (critical for cosmetics)
-            5. Product features and benefits
-            6. Usage instructions if available
-            7. Customer reviews for insights
-            8. Product images
+            if not url or not site_name:
+                return {"error": "URL and site_name are required"}
             
-            Return the extracted data in a structured format.
-            """
+            # Use the scraping tool directly
+            scraping_tool = self.tools[0]  # ProductScrapingTool
+            result = await scraping_tool(url, site_name)
             
-            response = await self.run_async(prompt)
-            return response
+            return result
             
         except Exception as e:
             logger.error(f"Scraper Agent error: {e}")
             return {"error": str(e)}
+    
+    async def run_async(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Async run method for compatibility"""
+        return await self.run(input_data)
+    
+    async def process_scraping_request(self, url: str, site_name: str) -> Dict[str, Any]:
+        """Process a product scraping request (legacy method)"""
+        return await self.run({'url': url, 'site_name': site_name})
 
 
 # Agent factory function for ADK orchestration

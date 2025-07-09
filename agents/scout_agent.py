@@ -167,29 +167,23 @@ class ScoutAgent(LlmAgent):
             """
         )
     
-    async def process_discovery_request(self, site_name: str, max_products: int = 100) -> Dict[str, Any]:
-        """Process a URL discovery request"""
+    async def run(self, site_name: str, max_products: int = 100) -> Dict[str, Any]:
+        """Main run method for Scout Agent"""
         try:
-            prompt = f"""
-            Discover cosmetic product URLs from the site: {site_name}
-            Maximum products to find: {max_products}
+            # Directly use the URLDiscoveryTool
+            discovery_tool = self.tools[0]  # URLDiscoveryTool
+            result = await discovery_tool(site_name, max_products)
             
-            Use the url_discovery tool to find product URLs from this e-commerce site.
-            Focus on finding URLs for:
-            - Skincare products (serums, creams, cleansers, etc.)
-            - Makeup products (foundation, lipstick, eyeshadow, etc.)
-            - Haircare products (shampoo, conditioner, treatments, etc.)
-            - Fragrance products (perfume, cologne, body spray, etc.)
-            
-            Return the discovered URLs in a structured format.
-            """
-            
-            response = await self.run_async(prompt)
-            return response
+            logger.info(f"Scout Agent discovered {result.get('total_count', 0)} URLs from {site_name}")
+            return result
             
         except Exception as e:
             logger.error(f"Scout Agent error: {e}")
             return {"error": str(e)}
+    
+    async def run_async(self, site_name: str, max_products: int = 100) -> Dict[str, Any]:
+        """Async run method for compatibility"""
+        return await self.run(site_name, max_products)
 
 
 # Agent factory function for ADK orchestration

@@ -420,44 +420,56 @@ class AnalyzerAgent(LlmAgent):
             """
         )
     
-    async def process_analysis_request(self, product_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process a product data analysis request"""
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Main run method for the analyzer agent"""
         try:
-            prompt = f"""
-            Clean and analyze this cosmetic product data:
-            Product Data: {product_data}
+            # Extract product data from input
+            product_data = input_data.get('product_data')
             
-            Please perform the following analysis:
+            if not product_data:
+                return {"error": "product_data is required"}
             
-            1. Clean and normalize all data fields using the data_cleaning tool:
-               - Remove HTML tags and normalize text
-               - Clean ingredient lists and features
-               - Normalize price format
-               - Detect content language
-               - Extract cosmetic-specific terms
+            # Use the cleaning tool first
+            cleaning_tool = self.tools[0]  # DataCleaningTool
+            cleaned_result = await cleaning_tool(product_data)
             
-            2. Perform cosmetic industry analysis using cosmetic_analysis tool:
-               - Categorize the product type
-               - Analyze skin type compatibility
-               - Evaluate ingredients and their benefits
-               - Assess market positioning
+            if "error" in cleaned_result:
+                return cleaned_result
             
-            3. Prepare comprehensive analyzed data including:
-               - Cleaned product data
-               - Extracted cosmetic terms
-               - Product categorization
-               - Ingredient analysis
-               - Market insights
+            # Use the analysis tool
+            analysis_tool = self.tools[1]  # CosmeticAnalysisTool
+            analysis_result = await analysis_tool(
+                cleaned_result['cleaned_product'], 
+                cleaned_result['extracted_terms']
+            )
             
-            Return the complete analyzed data ready for SEO processing.
-            """
+            if "error" in analysis_result:
+                return analysis_result
             
-            response = await self.run_async(prompt)
-            return response
+            # Combine results
+            return {
+                "cleaned_product": cleaned_result['cleaned_product'],
+                "language": cleaned_result['language'],
+                "extracted_terms": cleaned_result['extracted_terms'],
+                "content_sections": cleaned_result['content_sections'],
+                "text_stats": cleaned_result['text_stats'],
+                "product_category": analysis_result['product_category'],
+                "skin_compatibility": analysis_result['skin_compatibility'],
+                "ingredient_analysis": analysis_result['ingredient_analysis'],
+                "market_position": analysis_result['market_position']
+            }
             
         except Exception as e:
             logger.error(f"Analyzer Agent error: {e}")
             return {"error": str(e)}
+    
+    async def run_async(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Async run method for compatibility"""
+        return await self.run(input_data)
+    
+    async def process_analysis_request(self, product_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a product data analysis request (legacy method)"""
+        return await self.run({'product_data': product_data})
 
 
 # Agent factory function for ADK orchestration
