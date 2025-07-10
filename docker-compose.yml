@@ -36,6 +36,7 @@ services:
       MAX_PRODUCTS: 100
       RATE_LIMIT_SECONDS: 3
       TEST_MODE: "false"
+      ENABLE_AUTO_RUN: "false"
       
       # Email settings (if needed)
       SENDER_EMAIL: vverlumea@gmail.com

@@ -534,6 +534,18 @@ class SEOAgent(LlmAgent):
         return await self.run({'analyzed_data': analyzed_data})
 
 
+# Direct tool function for main.py and web_app.py
+async def generate_seo_data(analyzed_data: Dict[str, Any], max_keywords: int = 20) -> Dict[str, Any]:
+    """Direct tool function to generate SEO data"""
+    try:
+        tool = GenerateSEODataTool()
+        result = await tool(analyzed_data, max_keywords)
+        return result
+    except Exception as e:
+        logger.error(f"Direct generate_seo_data error: {e}")
+        return {"error": str(e)}
+
+
 # Agent factory function for ADK orchestration
 def create_seo_agent() -> SEOAgent:
     """Factory function to create SEO Agent instance"""

@@ -39,7 +39,7 @@ class CosmeticSEOOrchestrator:
         self.analyzer_agent = create_analyzer_agent()
         self.seo_agent = create_seo_agent()
         self.quality_agent = create_quality_agent()
-        self.storage_agent = create_storage_agent()
+        self.storage_agent = create_storage_agent(self.database_url, self.data_dir)
         
         logger.info("Cosmetic SEO Orchestrator initialized with Google ADK")
     
@@ -48,23 +48,24 @@ class CosmeticSEOOrchestrator:
         logger.info(f"Starting processing for site: {site_name}")
         
         try:
-            # Step 1: Scout - Discover product URLs using ADK
+            # Step 1: Scout - Discover product URLs using direct tool call
             logger.info(f"Step 1: Discovering URLs from {site_name}")
             
-            # Use ADK's run method to get URLs
-            scout_prompt = f"Discover {max_products} cosmetic product URLs from {site_name}. Use the discover_product_urls tool."
-            
-            async for event in self.scout_agent.run(scout_prompt):
-                if event.type == "tool_call":
-                    # Get the tool call result
-                    tool_result = event.data
-                    if tool_result and "discovered_urls" in tool_result:
-                        discovered_urls = tool_result["discovered_urls"]
-                        logger.info(f"Discovered {len(discovered_urls)} URLs from {site_name}")
-                        break
-            else:
-                logger.error(f"No URLs discovered from {site_name}")
-                return {"site": site_name, "error": "No URLs discovered"}
+            try:
+                # Direct tool call for better reliability
+                from agents.scout_agent import discover_product_urls
+                scout_result = await discover_product_urls(site_name, max_products)
+                
+                if "discovered_urls" in scout_result:
+                    discovered_urls = scout_result["discovered_urls"]
+                    logger.info(f"Discovered {len(discovered_urls)} URLs from {site_name}")
+                else:
+                    logger.error(f"No URLs discovered from {site_name}: {scout_result.get('error', 'Unknown error')}")
+                    return {"site": site_name, "error": scout_result.get("error", "No URLs discovered")}
+                    
+            except Exception as e:
+                logger.error(f"Scout agent error for {site_name}: {e}")
+                return {"site": site_name, "error": str(e)}
             
             if not discovered_urls:
                 return {"site": site_name, "message": "No URLs discovered"}
@@ -116,16 +117,15 @@ class CosmeticSEOOrchestrator:
             return {"site": site_name, "error": str(e)}
     
     async def _process_single_product(self, url: str, site_name: str) -> Dict[str, Any]:
-        """Process a single product through the complete pipeline using ADK"""
+        """Process a single product through the complete pipeline using direct tool calls"""
         try:
-            # Step 2: Scraper - Extract product data using ADK
-            scraper_prompt = f"Extract detailed product information from this URL: {url} for site: {site_name}. Use the scrape_product_data tool."
-            
-            scraper_result = None
-            async for event in self.scraper_agent.run(scraper_prompt):
-                if event.type == "tool_call":
-                    scraper_result = event.data
-                    break
+            # Step 2: Scraper - Extract product data directly
+            try:
+                from agents.scraper_agent import scrape_product_data
+                scraper_result = await scrape_product_data(url, site_name)
+            except Exception as e:
+                logger.error(f"Scraper error for {url}: {e}")
+                return {"url": url, "error": f"Scraper error: {str(e)}"}
             
             if not scraper_result or "error" in scraper_result:
                 logger.warning(f"Scraping failed for {url}: {scraper_result.get('error', 'Unknown error')}")
@@ -135,53 +135,49 @@ class CosmeticSEOOrchestrator:
             if not product_data:
                 return {"url": url, "error": "No product data extracted"}
             
-            # Step 3: Analyzer - Clean and analyze data using ADK
-            analyzer_prompt = f"Analyze and clean this product data: {product_data}. Use the analyze_product_data tool."
-            
-            analyzer_result = None
-            async for event in self.analyzer_agent.run(analyzer_prompt):
-                if event.type == "tool_call":
-                    analyzer_result = event.data
-                    break
+            # Step 3: Analyzer - Clean and analyze data directly
+            try:
+                from agents.analyzer_agent import analyze_product_data
+                analyzer_result = await analyze_product_data(product_data)
+            except Exception as e:
+                logger.error(f"Analyzer error for {url}: {e}")
+                return {"url": url, "error": f"Analyzer error: {str(e)}"}
             
             if not analyzer_result or "error" in analyzer_result:
                 logger.warning(f"Analysis failed for {url}: {analyzer_result.get('error', 'Unknown error')}")
                 return {"url": url, "error": analyzer_result.get("error", "Analysis failed")}
             
-            # Step 4: SEO Agent - Generate SEO metadata using ADK
-            seo_prompt = f"Generate SEO metadata for this analyzed product: {analyzer_result}. Use the generate_seo_data tool."
-            
-            seo_result = None
-            async for event in self.seo_agent.run(seo_prompt):
-                if event.type == "tool_call":
-                    seo_result = event.data
-                    break
+            # Step 4: SEO Agent - Generate SEO metadata directly
+            try:
+                from agents.seo_agent import generate_seo_data
+                seo_result = await generate_seo_data(analyzer_result)
+            except Exception as e:
+                logger.error(f"SEO error for {url}: {e}")
+                return {"url": url, "error": f"SEO error: {str(e)}"}
             
             if not seo_result or "error" in seo_result:
                 logger.warning(f"SEO generation failed for {url}: {seo_result.get('error', 'Unknown error')}")
                 return {"url": url, "error": seo_result.get("error", "SEO generation failed")}
             
-            # Step 5: Quality Agent - Validate quality using ADK
-            quality_prompt = f"Validate quality of this product data: product_data={product_data}, seo_data={seo_result}. Use the validate_product_quality tool."
-            
-            quality_result = None
-            async for event in self.quality_agent.run(quality_prompt):
-                if event.type == "tool_call":
-                    quality_result = event.data
-                    break
+            # Step 5: Quality Agent - Validate quality directly
+            try:
+                from agents.quality_agent import validate_product_quality
+                quality_result = await validate_product_quality(product_data, seo_result, analyzer_result.get("extracted_terms", {}))
+            except Exception as e:
+                logger.error(f"Quality error for {url}: {e}")
+                return {"url": url, "error": f"Quality error: {str(e)}"}
             
             if not quality_result or "error" in quality_result:
                 logger.warning(f"Quality validation failed for {url}: {quality_result.get('error', 'Unknown error')}")
                 return {"url": url, "error": quality_result.get("error", "Quality validation failed")}
             
-            # Step 6: Storage Agent - Store validated data using ADK
-            storage_prompt = f"Store this validated product data: product_data={product_data}, seo_data={seo_result}, quality_data={quality_result}. Use the store_product_data tool."
-            
-            storage_result = None
-            async for event in self.storage_agent.run(storage_prompt):
-                if event.type == "tool_call":
-                    storage_result = event.data
-                    break
+            # Step 6: Storage Agent - Store validated data directly
+            try:
+                from agents.storage_agent import store_product_data
+                storage_result = await store_product_data(product_data, seo_result, quality_result)
+            except Exception as e:
+                logger.error(f"Storage error for {url}: {e}")
+                return {"url": url, "error": f"Storage error: {str(e)}"}
             
             if not storage_result or "error" in storage_result:
                 logger.warning(f"Storage failed for {url}: {storage_result.get('error', 'Unknown error')}")
@@ -227,18 +223,19 @@ class CosmeticSEOOrchestrator:
                     if product.get("is_valid", False):
                         successful_products += 1
         
-        # Generate final report using ADK
-        report_prompt = "Generate a summary report of the cosmetic SEO extraction process. Use the generate_summary_report tool."
-        
-        report = None
-        try:
-            async for event in self.storage_agent.run(report_prompt):
-                if event.type == "tool_call":
-                    report = event.data
-                    break
-        except Exception as e:
-            logger.error(f"Report generation failed: {e}")
-            report = {"error": str(e)}
+        # Generate final report
+        report = {
+            "total_sites_processed": len(SITE_CONFIGS),
+            "total_products_found": total_products,
+            "successful_extractions": successful_products,
+            "success_rate": successful_products / total_products if total_products > 0 else 0,
+            "site_performance": {site: results[site] for site in results.keys()},
+            "recommendations": [
+                "Consider updating web scraping selectors",
+                "Implement better anti-bot detection bypass",
+                "Add more fallback extraction strategies"
+            ]
+        }
         
         logger.info(f"Extraction complete: {total_products} products processed, {successful_products} validated")
         
@@ -261,14 +258,12 @@ class CosmeticSEOOrchestrator:
         result = await self.process_site(site_name, max_products)
         
         # Generate sample report
+        sample_report_prompt = f"Generate a sample extraction report for testing purposes. Analyze the sample results and provide insights for the {site_name} extraction with {max_products} products."
+        
         try:
-            report_prompt = "Generate a sample report for testing. Use the generate_summary_report tool."
-            
-            report = None
-            async for event in self.storage_agent.run(report_prompt):
-                if event.type == "tool_call":
-                    report = event.data
-                    break
+            # Direct tool call instead of .run()
+            from agents.storage_agent import generate_summary_report
+            report = await generate_summary_report()
         except Exception as e:
             logger.error(f"Sample report generation failed: {e}")
             report = {"error": str(e)}
@@ -280,7 +275,13 @@ class CosmeticSEOOrchestrator:
 
 
 async def main():
-    """Main entry point"""
+    """Main entry point - Only run if ENABLE_AUTO_RUN is true"""
+    auto_run = os.getenv("ENABLE_AUTO_RUN", "false").lower() == "true"
+    
+    if not auto_run:
+        logger.info("Auto-run disabled. Use web interface at http://localhost:3000 to start extraction.")
+        return
+    
     orchestrator = CosmeticSEOOrchestrator()
     
     # Check if running in test mode

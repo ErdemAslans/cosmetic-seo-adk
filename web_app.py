@@ -43,10 +43,7 @@ class CosmeticSEOWebSystem:
         os.makedirs(self.results_dir, exist_ok=True)
         
         # Google ADK Orchestrator'ı başlat
-        self.orchestrator = CosmeticSEOOrchestrator(
-            database_url=os.getenv("DATABASE_URL", "postgresql://cosmetic_user:cosmetic_pass@localhost:5432/cosmetic_seo"),
-            data_dir=self.results_dir
-        )
+        self.orchestrator = CosmeticSEOOrchestrator()
         
         # Desteklenen siteler ve kategoriler
         self.sites = {
@@ -129,16 +126,14 @@ class CosmeticSEOWebSystem:
                 "message": f"🔍 Scout Agent {site} sitesinde '{category}' ürünlerini arıyor..."
             })
             
-            scout_result = await self.orchestrator.scout_agent.run({
-                "site_name": site,
-                "category": category,
-                "max_products": max_products
-            })
+            # Direct tool call instead of agent.run()
+            from agents.scout_agent import discover_product_urls
+            scout_result = await discover_product_urls(site, max_products)
             
-            if not scout_result or "urls" not in scout_result:
+            if not scout_result or "discovered_urls" not in scout_result:
                 raise Exception("Scout Agent URL bulamadı")
             
-            urls = scout_result["urls"][:max_products]
+            urls = scout_result["discovered_urls"][:max_products]
             await self._update_agent_status(task_id, "scout", f"✅ {len(urls)} URL bulundu")
             
             results = []
@@ -155,10 +150,9 @@ class CosmeticSEOWebSystem:
                     "message": f"🌐 Scraper Agent veri çekiyor... ({idx+1}/{total_urls})"
                 })
                 
-                scraper_result = await self.orchestrator.scraper_agent.run({
-                    "url": url,
-                    "site_name": site
-                })
+                # Direct tool call instead of .run()
+                from agents.scraper_agent import scrape_product_data
+                scraper_result = await scrape_product_data(url, site)
                 
                 if not scraper_result or "product_data" not in scraper_result:
                     continue
@@ -167,41 +161,41 @@ class CosmeticSEOWebSystem:
                 await self._update_agent_status(task_id, "analyzer", f"🔬 Analiz ediliyor ({idx+1}/{total_urls})")
                 active_tasks[task_id]["message"] = f"🔬 Analyzer Agent veriyi temizliyor..."
                 
-                analyzer_result = await self.orchestrator.analyzer_agent.run({
-                    "product_data": scraper_result["product_data"],
-                    "site_name": site
-                })
+                # Direct tool call for analyzer
+                from agents.analyzer_agent import analyze_product_data
+                analyzer_result = await analyze_product_data(scraper_result["product_data"])
                 
                 # SEO Agent
                 await self._update_agent_status(task_id, "seo", f"✨ SEO üretiliyor ({idx+1}/{total_urls})")
                 active_tasks[task_id]["message"] = f"✨ SEO Agent anahtar kelimeler üretiyor..."
                 
-                seo_result = await self.orchestrator.seo_agent.run({
-                    "analyzed_data": analyzer_result["cleaned_data"],
-                    "site_name": site,
-                    "category": category
-                })
+                # Direct tool call for SEO
+                from agents.seo_agent import generate_seo_data
+                seo_result = await generate_seo_data(analyzer_result)
                 
                 # Quality Agent
                 await self._update_agent_status(task_id, "quality", f"🎯 Kalite kontrolü ({idx+1}/{total_urls})")
                 active_tasks[task_id]["message"] = f"🎯 Quality Agent SEO kalitesini değerlendiriyor..."
                 
-                quality_result = await self.orchestrator.quality_agent.run({
-                    "product_data": analyzer_result["cleaned_data"],
-                    "seo_data": seo_result["seo_data"]
-                })
+                # Direct tool call for quality
+                from agents.quality_agent import validate_product_quality
+                quality_result = await validate_product_quality(
+                    analyzer_result.get("cleaned_product", {}), 
+                    seo_result, 
+                    analyzer_result.get("extracted_terms", {})
+                )
                 
                 # Sonucu ekle
                 result = {
-                    "product": analyzer_result["cleaned_data"],
-                    "seo": seo_result["seo_data"],
-                    "quality_score": quality_result["quality_score"],
+                    "product": analyzer_result.get("cleaned_product", {}),
+                    "seo": seo_result,
+                    "quality_score": quality_result.get("quality_score", 0),
                     "quality_report": quality_result.get("report", {}),
-                    "is_valid": quality_result["is_valid"],
+                    "is_valid": quality_result.get("is_valid", False),
                     "processed_at": time.time(),
                     "ai_insights": {
-                        "keywords_count": len(seo_result["seo_data"].get("keywords", [])),
-                        "content_analysis": analyzer_result.get("content_analysis", {}),
+                        "keywords_count": len(seo_result.get("keywords", [])),
+                        "content_analysis": analyzer_result.get("content_sections", {}),
                         "ai_model": "gemini-1.5-pro"
                     }
                 }

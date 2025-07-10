@@ -575,6 +575,18 @@ class StorageAgent(LlmAgent):
             return {"error": str(e)}
 
 
+# Direct tool function for main.py and web_app.py
+async def store_product_data(product_data: Dict[str, Any], seo_data: Dict[str, Any], quality_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Direct tool function to store product data"""
+    try:
+        tool = StoreProductDataTool()
+        result = await tool(product_data, seo_data, quality_data)
+        return result
+    except Exception as e:
+        logger.error(f"Direct store_product_data error: {e}")
+        return {"error": str(e)}
+
+
 # Agent factory function for ADK orchestration
 def create_storage_agent(database_url: str, data_dir: str = "data") -> StorageAgent:
     """Factory function to create Storage Agent instance"""

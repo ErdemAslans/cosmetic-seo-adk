@@ -498,6 +498,18 @@ class AnalyzerAgent(LlmAgent):
         return await self.run({'product_data': product_data})
 
 
+# Direct tool function for main.py and web_app.py
+async def analyze_product_data(product_data: Dict[str, Any], language: str = "auto") -> Dict[str, Any]:
+    """Direct tool function to analyze product data"""
+    try:
+        tool = AnalyzeProductDataTool()
+        result = await tool(product_data, language)
+        return result
+    except Exception as e:
+        logger.error(f"Direct analyze_product_data error: {e}")
+        return {"error": str(e)}
+
+
 # Agent factory function for ADK orchestration
 def create_analyzer_agent() -> AnalyzerAgent:
     """Factory function to create Analyzer Agent instance"""

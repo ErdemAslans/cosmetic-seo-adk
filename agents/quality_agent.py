@@ -485,6 +485,18 @@ class QualityAgent(LlmAgent):
         })
 
 
+# Direct tool function for main.py and web_app.py
+async def validate_product_quality(product_data: Dict[str, Any], seo_data: Dict[str, Any], extracted_terms: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Direct tool function to validate product quality"""
+    try:
+        tool = ValidateProductQualityTool()
+        result = await tool(product_data, seo_data, extracted_terms or {})
+        return result
+    except Exception as e:
+        logger.error(f"Direct validate_product_quality error: {e}")
+        return {"error": str(e)}
+
+
 # Agent factory function for ADK orchestration
 def create_quality_agent() -> QualityAgent:
     """Factory function to create Quality Agent instance"""
