@@ -405,11 +405,69 @@ class SEOMetadataTool(BaseTool):
             return "cosmetic product"
 
 
+class GenerateSEODataTool(BaseTool):
+    """Main tool for generating comprehensive SEO data"""
+    
+    def __init__(self):
+        super().__init__(
+            name="generate_seo_data",
+            description="Generate comprehensive SEO metadata for cosmetic products",
+            is_long_running=True
+        )
+        self.keyword_extraction_tool = KeywordExtractionTool()
+        self.seo_metadata_tool = SEOMetadataTool()
+    
+    async def __call__(self, analyzed_data: Dict[str, Any], max_keywords: int = 20) -> Dict[str, Any]:
+        """Generate comprehensive SEO data"""
+        try:
+            # Extract required data components
+            product_data = analyzed_data.get('cleaned_product')
+            extracted_terms = analyzed_data.get('extracted_terms', {})
+            
+            if not product_data:
+                return {"error": "cleaned_product data is required"}
+            
+            # Step 1: Extract keywords
+            keyword_result = await self.keyword_extraction_tool(product_data, extracted_terms, max_keywords)
+            
+            if "error" in keyword_result:
+                return keyword_result
+            
+            # Step 2: Generate SEO metadata
+            metadata_result = await self.seo_metadata_tool(
+                product_data, 
+                keyword_result['keywords'], 
+                keyword_result['primary_keyword']
+            )
+            
+            if "error" in metadata_result:
+                return metadata_result
+            
+            # Combine all results
+            return {
+                "keywords": keyword_result['keywords'],
+                "primary_keyword": keyword_result['primary_keyword'],
+                "secondary_keywords": keyword_result['secondary_keywords'],
+                "long_tail_keywords": keyword_result['long_tail_keywords'],
+                "keyword_density": keyword_result['keyword_density'],
+                "title": metadata_result['title'],
+                "meta_description": metadata_result['meta_description'],
+                "slug": metadata_result['slug'],
+                "focus_keyphrase": metadata_result['focus_keyphrase'],
+                "product_url": product_data.get('url'),
+                "generated_at": datetime.now()
+            }
+            
+        except Exception as e:
+            logger.error(f"SEO data generation error: {e}")
+            return {"error": str(e)}
+
+
 class SEOAgent(LlmAgent):
     """SEO Agent for generating comprehensive SEO metadata using Google ADK"""
     
     def __init__(self):
-        tools = [KeywordExtractionTool(), SEOMetadataTool()]
+        tools = [GenerateSEODataTool()]
         
         super().__init__(
             name="seo_agent",
@@ -426,11 +484,10 @@ class SEOAgent(LlmAgent):
             5. Focus on cosmetic industry-specific SEO best practices
             
             For each analyzed product data you receive:
-            1. Use keyword_extraction tool to extract comprehensive keywords
-            2. Use seo_metadata tool to generate optimized metadata
-            3. Ensure all SEO elements are within character limits
-            4. Focus on cosmetic industry keywords and terminology
-            5. Create compelling, search-friendly content
+            1. Use generate_seo_data tool to create comprehensive SEO metadata
+            2. Ensure all SEO elements are within character limits
+            3. Focus on cosmetic industry keywords and terminology
+            4. Create compelling, search-friendly content
             
             SEO Best Practices for Cosmetics:
             - Include product type, brand, and key ingredients in keywords
@@ -453,49 +510,16 @@ class SEOAgent(LlmAgent):
         try:
             # Extract analyzed data from input
             analyzed_data = input_data.get('analyzed_data')
+            max_keywords = input_data.get('max_keywords', 20)
             
             if not analyzed_data:
                 return {"error": "analyzed_data is required"}
             
-            # Extract required data components
-            product_data = analyzed_data.get('cleaned_product')
-            extracted_terms = analyzed_data.get('extracted_terms', {})
+            # Use the main SEO generation tool
+            seo_tool = self.tools[0]  # GenerateSEODataTool
+            result = await seo_tool(analyzed_data, max_keywords)
             
-            if not product_data:
-                return {"error": "cleaned_product data is required"}
-            
-            # Use the keyword extraction tool
-            keyword_tool = self.tools[0]  # KeywordExtractionTool
-            keyword_result = await keyword_tool(product_data, extracted_terms)
-            
-            if "error" in keyword_result:
-                return keyword_result
-            
-            # Use the SEO metadata tool
-            metadata_tool = self.tools[1]  # SEOMetadataTool
-            metadata_result = await metadata_tool(
-                product_data, 
-                keyword_result['keywords'], 
-                keyword_result['primary_keyword']
-            )
-            
-            if "error" in metadata_result:
-                return metadata_result
-            
-            # Combine results
-            return {
-                "keywords": keyword_result['keywords'],
-                "primary_keyword": keyword_result['primary_keyword'],
-                "secondary_keywords": keyword_result['secondary_keywords'],
-                "long_tail_keywords": keyword_result['long_tail_keywords'],
-                "keyword_density": keyword_result['keyword_density'],
-                "title": metadata_result['title'],
-                "meta_description": metadata_result['meta_description'],
-                "slug": metadata_result['slug'],
-                "focus_keyphrase": metadata_result['focus_keyphrase'],
-                "product_url": product_data.get('url'),
-                "generated_at": datetime.now()
-            }
+            return result
             
         except Exception as e:
             logger.error(f"SEO Agent error: {e}")

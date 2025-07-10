@@ -5,6 +5,7 @@ Cleans, normalizes and analyzes cosmetic product data
 
 import re
 from typing import Dict, Any, Optional, List
+from datetime import datetime
 from bs4 import BeautifulSoup
 from langdetect import detect
 from loguru import logger
@@ -380,11 +381,60 @@ class CosmeticAnalysisTool(BaseTool):
         }
 
 
+class AnalyzeProductDataTool(BaseTool):
+    """Main tool for analyzing product data with all sub-processes"""
+    
+    def __init__(self):
+        super().__init__(
+            name="analyze_product_data",
+            description="Analyze and clean cosmetic product data comprehensively",
+            is_long_running=True
+        )
+        self.data_cleaning_tool = DataCleaningTool()
+        self.cosmetic_analysis_tool = CosmeticAnalysisTool()
+    
+    async def __call__(self, product_data: Dict[str, Any], language: str = "auto") -> Dict[str, Any]:
+        """Analyze product data comprehensively"""
+        try:
+            # Step 1: Clean and normalize data
+            cleaned_result = await self.data_cleaning_tool(product_data, language)
+            
+            if "error" in cleaned_result:
+                return cleaned_result
+            
+            # Step 2: Perform cosmetic industry analysis
+            analysis_result = await self.cosmetic_analysis_tool(
+                cleaned_result['cleaned_product'], 
+                cleaned_result['extracted_terms']
+            )
+            
+            if "error" in analysis_result:
+                return analysis_result
+            
+            # Combine all results
+            return {
+                "cleaned_product": cleaned_result['cleaned_product'],
+                "language": cleaned_result['language'],
+                "extracted_terms": cleaned_result['extracted_terms'],
+                "content_sections": cleaned_result['content_sections'],
+                "text_stats": cleaned_result['text_stats'],
+                "product_category": analysis_result['product_category'],
+                "skin_compatibility": analysis_result['skin_compatibility'],
+                "ingredient_analysis": analysis_result['ingredient_analysis'],
+                "market_position": analysis_result['market_position'],
+                "analyzed_at": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Product data analysis error: {e}")
+            return {"error": str(e)}
+
+
 class AnalyzerAgent(LlmAgent):
     """Analyzer Agent for cleaning and analyzing cosmetic product data using Google ADK"""
     
     def __init__(self):
-        tools = [DataCleaningTool(), CosmeticAnalysisTool()]
+        tools = [AnalyzeProductDataTool()]
         
         super().__init__(
             name="analyzer_agent",
@@ -402,11 +452,10 @@ class AnalyzerAgent(LlmAgent):
             6. Prepare data for SEO analysis
             
             For each product data you receive:
-            1. Use data_cleaning tool to clean and normalize the data
-            2. Use cosmetic_analysis tool for industry-specific analysis
-            3. Extract key cosmetic terms (ingredients, benefits, product types)
-            4. Analyze language and content structure
-            5. Prepare comprehensive analyzed data for SEO processing
+            1. Use analyze_product_data tool to comprehensively process the data
+            2. Extract key cosmetic terms (ingredients, benefits, product types)
+            3. Analyze language and content structure
+            4. Prepare comprehensive analyzed data for SEO processing
             
             Focus on:
             - Data quality and consistency
@@ -425,39 +474,16 @@ class AnalyzerAgent(LlmAgent):
         try:
             # Extract product data from input
             product_data = input_data.get('product_data')
+            language = input_data.get('language', 'auto')
             
             if not product_data:
                 return {"error": "product_data is required"}
             
-            # Use the cleaning tool first
-            cleaning_tool = self.tools[0]  # DataCleaningTool
-            cleaned_result = await cleaning_tool(product_data)
+            # Use the main analysis tool
+            analysis_tool = self.tools[0]  # AnalyzeProductDataTool
+            result = await analysis_tool(product_data, language)
             
-            if "error" in cleaned_result:
-                return cleaned_result
-            
-            # Use the analysis tool
-            analysis_tool = self.tools[1]  # CosmeticAnalysisTool
-            analysis_result = await analysis_tool(
-                cleaned_result['cleaned_product'], 
-                cleaned_result['extracted_terms']
-            )
-            
-            if "error" in analysis_result:
-                return analysis_result
-            
-            # Combine results
-            return {
-                "cleaned_product": cleaned_result['cleaned_product'],
-                "language": cleaned_result['language'],
-                "extracted_terms": cleaned_result['extracted_terms'],
-                "content_sections": cleaned_result['content_sections'],
-                "text_stats": cleaned_result['text_stats'],
-                "product_category": analysis_result['product_category'],
-                "skin_compatibility": analysis_result['skin_compatibility'],
-                "ingredient_analysis": analysis_result['ingredient_analysis'],
-                "market_position": analysis_result['market_position']
-            }
+            return result
             
         except Exception as e:
             logger.error(f"Analyzer Agent error: {e}")

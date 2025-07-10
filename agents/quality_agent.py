@@ -4,6 +4,7 @@ Validates and scores SEO data quality for cosmetic products
 """
 
 from typing import Dict, Any, Optional, List
+from datetime import datetime
 from loguru import logger
 
 from google.adk.agents import LlmAgent
@@ -339,11 +340,78 @@ class CosmeticSEOBestPracticesTool(BaseTool):
             return {"error": str(e)}
 
 
+class ValidateProductQualityTool(BaseTool):
+    """Main tool for validating product quality with comprehensive checks"""
+    
+    def __init__(self):
+        super().__init__(
+            name="validate_product_quality",
+            description="Validate SEO data quality and cosmetic industry best practices",
+            is_long_running=True
+        )
+        self.seo_quality_validation_tool = SEOQualityValidationTool()
+        self.cosmetic_seo_best_practices_tool = CosmeticSEOBestPracticesTool()
+    
+    async def __call__(self, product_data: Dict[str, Any], seo_data: Dict[str, Any], extracted_terms: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Validate product quality comprehensively"""
+        try:
+            if extracted_terms is None:
+                extracted_terms = {}
+            
+            # Step 1: Technical quality validation
+            quality_result = await self.seo_quality_validation_tool(product_data, seo_data)
+            
+            if "error" in quality_result:
+                return quality_result
+            
+            # Step 2: Cosmetic industry best practices validation
+            best_practices_result = await self.cosmetic_seo_best_practices_tool(product_data, seo_data, extracted_terms)
+            
+            if "error" in best_practices_result:
+                return best_practices_result
+            
+            # Combine results and determine overall quality
+            all_recommendations = quality_result['recommendations'] + best_practices_result['recommendations']
+            
+            # Calculate overall quality score (weighted average)
+            technical_weight = 0.7
+            best_practices_weight = 0.3
+            
+            overall_score = (
+                quality_result['quality_score'] * technical_weight + 
+                best_practices_result['percentage'] * best_practices_weight
+            )
+            
+            # Determine final validation status
+            final_is_valid = quality_result['is_valid'] and best_practices_result['cosmetic_seo_compliant']
+            
+            return {
+                "is_valid": final_is_valid,
+                "overall_quality_score": round(overall_score, 2),
+                "technical_quality_score": quality_result['quality_score'],
+                "best_practices_score": best_practices_result['percentage'],
+                "errors": quality_result['errors'],
+                "warnings": quality_result['warnings'],
+                "severity": quality_result['severity'],
+                "recommendations": all_recommendations,
+                "cosmetic_seo_compliant": best_practices_result['cosmetic_seo_compliant'],
+                "validation_details": {
+                    "technical_validation": quality_result,
+                    "best_practices_validation": best_practices_result
+                },
+                "validated_at": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Product quality validation error: {e}")
+            return {"error": str(e)}
+
+
 class QualityAgent(LlmAgent):
     """Quality Agent for validating SEO data quality using Google ADK"""
     
     def __init__(self):
-        tools = [SEOQualityValidationTool(), CosmeticSEOBestPracticesTool()]
+        tools = [ValidateProductQualityTool()]
         
         super().__init__(
             name="quality_agent",
@@ -360,11 +428,10 @@ class QualityAgent(LlmAgent):
             5. Verify keyword relevance and density optimization
             
             For each SEO data validation request:
-            1. Use seo_quality_validation tool to check technical quality
-            2. Use cosmetic_seo_best_practices tool for industry-specific validation
-            3. Provide comprehensive quality assessment
-            4. Generate actionable improvement recommendations
-            5. Determine if data is ready for storage or needs revision
+            1. Use validate_product_quality tool to perform comprehensive validation
+            2. Provide comprehensive quality assessment
+            3. Generate actionable improvement recommendations
+            4. Determine if data is ready for storage or needs revision
             
             Quality Standards:
             - SEO Title: 10-60 characters, includes primary keyword
@@ -395,34 +462,11 @@ class QualityAgent(LlmAgent):
             if not product_data or not seo_data:
                 return {"error": "product_data and seo_data are required"}
             
-            # Use the quality validation tool
-            quality_tool = self.tools[0]  # SEOQualityValidationTool
-            quality_result = await quality_tool(product_data, seo_data)
+            # Use the main validation tool
+            validation_tool = self.tools[0]  # ValidateProductQualityTool
+            result = await validation_tool(product_data, seo_data, extracted_terms)
             
-            if "error" in quality_result:
-                return quality_result
-            
-            # Use the best practices tool
-            best_practices_tool = self.tools[1]  # CosmeticSEOBestPracticesTool
-            best_practices_result = await best_practices_tool(product_data, seo_data, extracted_terms)
-            
-            if "error" in best_practices_result:
-                return best_practices_result
-            
-            # Combine results
-            return {
-                "is_valid": quality_result['is_valid'],
-                "errors": quality_result['errors'],
-                "warnings": quality_result['warnings'],
-                "severity": quality_result['severity'],
-                "quality_score": quality_result['quality_score'],
-                "recommendations": quality_result['recommendations'],
-                "best_practices_score": best_practices_result['best_practices_score'],
-                "total_checks": best_practices_result['total_checks'],
-                "percentage": best_practices_result['percentage'],
-                "cosmetic_seo_compliant": best_practices_result['cosmetic_seo_compliant'],
-                "best_practices_recommendations": best_practices_result['recommendations']
-            }
+            return result
             
         except Exception as e:
             logger.error(f"Quality Agent error: {e}")

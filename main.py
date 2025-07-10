@@ -11,8 +11,6 @@ from loguru import logger
 import time
 
 from google.adk.agents import Agent
-# Orchestration functionality is handled by flows in ADK
-# from google.adk.flows import llm_flows
 
 from agents.scout_agent import create_scout_agent
 from agents.scraper_agent import create_scraper_agent
@@ -28,20 +26,20 @@ load_dotenv()
 
 
 class CosmeticSEOOrchestrator:
-    """Main orchestrator for the cosmetic SEO extraction pipeline"""
+    """Main orchestrator for the cosmetic SEO extraction pipeline using Google ADK"""
     
     def __init__(self):
         self.database_url = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/cosmetic_seo")
         self.data_dir = "data"
         self.max_products = int(os.getenv("MAX_PRODUCTS", 100))
         
-        # Initialize agents
+        # Initialize agents using ADK
         self.scout_agent = create_scout_agent()
         self.scraper_agent = create_scraper_agent()
         self.analyzer_agent = create_analyzer_agent()
         self.seo_agent = create_seo_agent()
         self.quality_agent = create_quality_agent()
-        self.storage_agent = create_storage_agent(self.database_url, self.data_dir)
+        self.storage_agent = create_storage_agent()
         
         logger.info("Cosmetic SEO Orchestrator initialized with Google ADK")
     
@@ -50,33 +48,58 @@ class CosmeticSEOOrchestrator:
         logger.info(f"Starting processing for site: {site_name}")
         
         try:
-            # Step 1: Scout - Discover product URLs
+            # Step 1: Scout - Discover product URLs using ADK
             logger.info(f"Step 1: Discovering URLs from {site_name}")
-            scout_result = await self.scout_agent.run(site_name, max_products)
             
-            if "error" in scout_result:
-                logger.error(f"Scout failed for {site_name}: {scout_result['error']}")
-                return {"site": site_name, "error": scout_result["error"]}
+            # Use ADK's run method to get URLs
+            scout_prompt = f"Discover {max_products} cosmetic product URLs from {site_name}. Use the discover_product_urls tool."
             
-            discovered_urls = scout_result.get("discovered_urls", [])
-            logger.info(f"Discovered {len(discovered_urls)} URLs from {site_name}")
+            async for event in self.scout_agent.run(scout_prompt):
+                if event.type == "tool_call":
+                    # Get the tool call result
+                    tool_result = event.data
+                    if tool_result and "discovered_urls" in tool_result:
+                        discovered_urls = tool_result["discovered_urls"]
+                        logger.info(f"Discovered {len(discovered_urls)} URLs from {site_name}")
+                        break
+            else:
+                logger.error(f"No URLs discovered from {site_name}")
+                return {"site": site_name, "error": "No URLs discovered"}
             
             if not discovered_urls:
                 return {"site": site_name, "message": "No URLs discovered"}
             
             # Process URLs in batches to avoid overwhelming
-            batch_size = 10
+            batch_size = 5  # Smaller batches for better reliability
             processed_products = []
             
             for i in range(0, len(discovered_urls), batch_size):
                 batch_urls = discovered_urls[i:i + batch_size]
                 logger.info(f"Processing batch {i//batch_size + 1}: {len(batch_urls)} URLs")
                 
-                batch_results = await self._process_url_batch(batch_urls, site_name)
-                processed_products.extend(batch_results)
+                # Process batch concurrently but with limit
+                batch_tasks = []
+                for url in batch_urls:
+                    task = self._process_single_product(url, site_name)
+                    batch_tasks.append(task)
                 
-                # Add delay between batches to respect rate limits
-                await asyncio.sleep(2)
+                # Execute batch with timeout
+                try:
+                    batch_results = await asyncio.wait_for(
+                        asyncio.gather(*batch_tasks, return_exceptions=True),
+                        timeout=300  # 5 minutes per batch
+                    )
+                    
+                    # Filter successful results
+                    for result in batch_results:
+                        if isinstance(result, dict) and "error" not in result:
+                            processed_products.append(result)
+                    
+                except asyncio.TimeoutError:
+                    logger.warning(f"Batch {i//batch_size + 1} timed out")
+                
+                # Add delay between batches
+                await asyncio.sleep(5)
             
             logger.info(f"Completed processing {site_name}: {len(processed_products)} products processed")
             
@@ -92,75 +115,77 @@ class CosmeticSEOOrchestrator:
             logger.error(f"Error processing site {site_name}: {e}")
             return {"site": site_name, "error": str(e)}
     
-    async def _process_url_batch(self, urls: List[str], site_name: str) -> List[Dict[str, Any]]:
-        """Process a batch of URLs through the complete pipeline"""
-        processed_products = []
-        
-        for url in urls:
-            try:
-                result = await self._process_single_product(url, site_name)
-                if result and "error" not in result:
-                    processed_products.append(result)
-                
-                # Rate limiting
-                await asyncio.sleep(float(os.getenv("RATE_LIMIT_SECONDS", 3)))
-                
-            except Exception as e:
-                logger.error(f"Error processing URL {url}: {e}")
-                continue
-        
-        return processed_products
-    
     async def _process_single_product(self, url: str, site_name: str) -> Dict[str, Any]:
-        """Process a single product through the complete pipeline"""
+        """Process a single product through the complete pipeline using ADK"""
         try:
-            # Step 2: Scraper - Extract product data
-            scraper_result = await self.scraper_agent.run({'url': url, 'site_name': site_name})
+            # Step 2: Scraper - Extract product data using ADK
+            scraper_prompt = f"Extract detailed product information from this URL: {url} for site: {site_name}. Use the scrape_product_data tool."
             
-            if "error" in scraper_result:
-                logger.warning(f"Scraping failed for {url}: {scraper_result['error']}")
-                return {"url": url, "error": scraper_result["error"]}
+            scraper_result = None
+            async for event in self.scraper_agent.run(scraper_prompt):
+                if event.type == "tool_call":
+                    scraper_result = event.data
+                    break
+            
+            if not scraper_result or "error" in scraper_result:
+                logger.warning(f"Scraping failed for {url}: {scraper_result.get('error', 'Unknown error')}")
+                return {"url": url, "error": scraper_result.get("error", "Scraping failed")}
             
             product_data = scraper_result.get("product_data")
             if not product_data:
                 return {"url": url, "error": "No product data extracted"}
             
-            # Step 3: Analyzer - Clean and analyze data
-            analyzer_result = await self.analyzer_agent.run({'product_data': product_data})
+            # Step 3: Analyzer - Clean and analyze data using ADK
+            analyzer_prompt = f"Analyze and clean this product data: {product_data}. Use the analyze_product_data tool."
             
-            if "error" in analyzer_result:
-                logger.warning(f"Analysis failed for {url}: {analyzer_result['error']}")
-                return {"url": url, "error": analyzer_result["error"]}
+            analyzer_result = None
+            async for event in self.analyzer_agent.run(analyzer_prompt):
+                if event.type == "tool_call":
+                    analyzer_result = event.data
+                    break
             
-            # Step 4: SEO Agent - Generate SEO metadata
-            seo_result = await self.seo_agent.run({'analyzed_data': analyzer_result})
+            if not analyzer_result or "error" in analyzer_result:
+                logger.warning(f"Analysis failed for {url}: {analyzer_result.get('error', 'Unknown error')}")
+                return {"url": url, "error": analyzer_result.get("error", "Analysis failed")}
             
-            if "error" in seo_result:
-                logger.warning(f"SEO generation failed for {url}: {seo_result['error']}")
-                return {"url": url, "error": seo_result["error"]}
+            # Step 4: SEO Agent - Generate SEO metadata using ADK
+            seo_prompt = f"Generate SEO metadata for this analyzed product: {analyzer_result}. Use the generate_seo_data tool."
             
-            # Step 5: Quality Agent - Validate quality
-            extracted_terms = analyzer_result.get("extracted_terms", {})
-            quality_result = await self.quality_agent.run({
-                'product_data': product_data,
-                'seo_data': seo_result.get('seo_data', {}),
-                'extracted_terms': extracted_terms
-            })
+            seo_result = None
+            async for event in self.seo_agent.run(seo_prompt):
+                if event.type == "tool_call":
+                    seo_result = event.data
+                    break
             
-            if "error" in quality_result:
-                logger.warning(f"Quality validation failed for {url}: {quality_result['error']}")
-                return {"url": url, "error": quality_result["error"]}
+            if not seo_result or "error" in seo_result:
+                logger.warning(f"SEO generation failed for {url}: {seo_result.get('error', 'Unknown error')}")
+                return {"url": url, "error": seo_result.get("error", "SEO generation failed")}
             
-            # Step 6: Storage Agent - Store validated data
-            storage_result = await self.storage_agent.run({
-                'product_data': product_data,
-                'seo_data': seo_result.get('seo_data', {}),
-                'validation_data': quality_result
-            })
+            # Step 5: Quality Agent - Validate quality using ADK
+            quality_prompt = f"Validate quality of this product data: product_data={product_data}, seo_data={seo_result}. Use the validate_product_quality tool."
             
-            if "error" in storage_result:
-                logger.warning(f"Storage failed for {url}: {storage_result['error']}")
-                return {"url": url, "error": storage_result["error"]}
+            quality_result = None
+            async for event in self.quality_agent.run(quality_prompt):
+                if event.type == "tool_call":
+                    quality_result = event.data
+                    break
+            
+            if not quality_result or "error" in quality_result:
+                logger.warning(f"Quality validation failed for {url}: {quality_result.get('error', 'Unknown error')}")
+                return {"url": url, "error": quality_result.get("error", "Quality validation failed")}
+            
+            # Step 6: Storage Agent - Store validated data using ADK
+            storage_prompt = f"Store this validated product data: product_data={product_data}, seo_data={seo_result}, quality_data={quality_result}. Use the store_product_data tool."
+            
+            storage_result = None
+            async for event in self.storage_agent.run(storage_prompt):
+                if event.type == "tool_call":
+                    storage_result = event.data
+                    break
+            
+            if not storage_result or "error" in storage_result:
+                logger.warning(f"Storage failed for {url}: {storage_result.get('error', 'Unknown error')}")
+                return {"url": url, "error": storage_result.get("error", "Storage failed")}
             
             logger.info(f"Successfully processed product: {url}")
             
@@ -188,20 +213,32 @@ class CosmeticSEOOrchestrator:
         # Process each site
         for site_config in SITE_CONFIGS:
             site_name = site_config.name
-            max_products_per_site = self.max_products // len(SITE_CONFIGS)
+            max_products_per_site = min(self.max_products // len(SITE_CONFIGS), 20)  # Limit per site
+            
+            logger.info(f"Processing site: {site_name} with max {max_products_per_site} products")
             
             site_result = await self.process_site(site_name, max_products_per_site)
             results[site_name] = site_result
             
             if "processed_products" in site_result:
                 total_products += site_result["processed_products"]
-                # Count successful products (those with valid quality scores)
+                # Count successful products
                 for product in site_result.get("products", []):
                     if product.get("is_valid", False):
                         successful_products += 1
         
-        # Generate final report
-        report = await self.storage_agent.generate_summary_report()
+        # Generate final report using ADK
+        report_prompt = "Generate a summary report of the cosmetic SEO extraction process. Use the generate_summary_report tool."
+        
+        report = None
+        try:
+            async for event in self.storage_agent.run(report_prompt):
+                if event.type == "tool_call":
+                    report = event.data
+                    break
+        except Exception as e:
+            logger.error(f"Report generation failed: {e}")
+            report = {"error": str(e)}
         
         logger.info(f"Extraction complete: {total_products} products processed, {successful_products} validated")
         
@@ -213,20 +250,32 @@ class CosmeticSEOOrchestrator:
                 "sites_processed": len(SITE_CONFIGS)
             },
             "site_results": results,
-            "final_report": report,
+            "final_report": report or {},
             "completed_at": time.time()
         }
     
-    async def run_sample_extraction(self, site_name: str = "trendyol", max_products: int = 10) -> Dict[str, Any]:
+    async def run_sample_extraction(self, site_name: str = "trendyol", max_products: int = 5) -> Dict[str, Any]:
         """Run a sample extraction for testing"""
         logger.info(f"Running sample extraction: {site_name}, max_products: {max_products}")
         
         result = await self.process_site(site_name, max_products)
-        report = await self.storage_agent.generate_summary_report()
+        
+        # Generate sample report
+        try:
+            report_prompt = "Generate a sample report for testing. Use the generate_summary_report tool."
+            
+            report = None
+            async for event in self.storage_agent.run(report_prompt):
+                if event.type == "tool_call":
+                    report = event.data
+                    break
+        except Exception as e:
+            logger.error(f"Sample report generation failed: {e}")
+            report = {"error": str(e)}
         
         return {
             "sample_result": result,
-            "report": report
+            "report": report or {}
         }
 
 
@@ -239,13 +288,19 @@ async def main():
     
     if test_mode:
         logger.info("Running in TEST MODE - processing small sample")
-        result = await orchestrator.run_sample_extraction("trendyol", 5)
+        result = await orchestrator.run_sample_extraction("trendyol", 3)
     else:
         logger.info("Running FULL EXTRACTION")
         result = await orchestrator.run_full_extraction()
     
     logger.info("Extraction completed successfully")
-    logger.info(f"Final result: {result['summary'] if 'summary' in result else result}")
+    
+    # Print summary
+    if 'summary' in result:
+        summary = result['summary']
+        logger.info(f"Final summary: {summary}")
+    else:
+        logger.info(f"Sample result: {result.get('sample_result', {}).get('processed_products', 0)} products processed")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ import os
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from pathlib import Path
-# Using psycopg2 instead of asyncpg for database connections
+# Database connections - asyncpg not available, using fallback
 # import asyncpg
 import pandas as pd
 from loguru import logger
@@ -35,8 +35,13 @@ class DatabaseStorageTool(BaseTool):
     async def _get_pool(self):
         """Get database connection pool"""
         if not self.pool:
-            self.pool = await asyncpg.create_pool(self.database_url)
-            await self._initialize_database()
+            try:
+                import asyncpg
+                self.pool = await asyncpg.create_pool(self.database_url)
+                await self._initialize_database()
+            except ImportError:
+                logger.warning("asyncpg not available, database storage will be skipped")
+                self.pool = None
         return self.pool
     
     async def _initialize_database(self):
@@ -113,6 +118,9 @@ class DatabaseStorageTool(BaseTool):
         """Store data to database"""
         try:
             pool = await self._get_pool()
+            if pool is None:
+                return {"error": "Database connection not available (asyncpg not installed)"}
+            
             product = ProductData(**product_data)
             
             # Parse SEO data carefully
@@ -299,13 +307,82 @@ class FileStorageTool(BaseTool):
         return filepath
 
 
-class ReportingTool(BaseTool):
-    """Tool for generating summary reports"""
+class StoreProductDataTool(BaseTool):
+    """Main tool for storing product data with all sub-processes"""
+    
+    def __init__(self, database_url: str, data_dir: str = "data"):
+        super().__init__(
+            name="store_product_data",
+            description="Store validated product and SEO data to all storage formats",
+            is_long_running=True
+        )
+        self.database_storage_tool = DatabaseStorageTool(database_url)
+        self.file_storage_tool = FileStorageTool(data_dir)
+    
+    async def __call__(self, product_data: Dict[str, Any], seo_data: Dict[str, Any], validation_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Store product data comprehensively"""
+        try:
+            # Check if data passed quality validation
+            is_valid = validation_data.get("is_valid", False)
+            quality_score = validation_data.get("overall_quality_score", 0)
+            
+            if not is_valid and quality_score < 60:
+                return {
+                    "error": "Data quality too low for storage",
+                    "quality_score": quality_score,
+                    "recommendation": "Improve data quality before storage"
+                }
+            
+            # Store to database
+            database_result = await self.database_storage_tool(product_data, seo_data, validation_data)
+            
+            if "error" in database_result:
+                logger.warning(f"Database storage failed: {database_result['error']}")
+                database_result = {"success": False, "error": database_result['error']}
+            
+            # Store to files
+            file_result = await self.file_storage_tool(product_data, seo_data, validation_data)
+            
+            if "error" in file_result:
+                # If file storage fails but database succeeded, still return partial success
+                if database_result.get('success', False):
+                    return {
+                        "success": True,
+                        "partial_failure": True,
+                        "database_storage": database_result,
+                        "file_storage": file_result,
+                        "quality_score": quality_score,
+                        "warning": "Database storage succeeded but file storage failed"
+                    }
+                else:
+                    return file_result
+            
+            # Both storage methods succeeded
+            return {
+                "success": True,
+                "database_storage": database_result,
+                "file_storage": file_result,
+                "quality_score": quality_score,
+                "storage_summary": {
+                    "csv_path": file_result.get('csv_path'),
+                    "json_path": file_result.get('json_path'),
+                    "database_stored": database_result.get('success', False)
+                },
+                "stored_at": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Product data storage error: {e}")
+            return {"error": str(e)}
+
+
+class GenerateSummaryReportTool(BaseTool):
+    """Tool for generating comprehensive summary reports"""
     
     def __init__(self, database_url: str):
         super().__init__(
-            name="generate_report",
-            description="Generate summary reports about stored data",
+            name="generate_summary_report",
+            description="Generate comprehensive summary reports about stored data",
             is_long_running=True
         )
         self.database_url = database_url
@@ -314,13 +391,26 @@ class ReportingTool(BaseTool):
     async def _get_pool(self):
         """Get database connection pool"""
         if not self.pool:
-            self.pool = await asyncpg.create_pool(self.database_url)
+            try:
+                import asyncpg
+                self.pool = await asyncpg.create_pool(self.database_url)
+            except ImportError:
+                logger.warning("asyncpg not available, database reporting will be skipped")
+                self.pool = None
         return self.pool
     
     async def __call__(self, report_type: str = "summary") -> Dict[str, Any]:
         """Generate report"""
         try:
             pool = await self._get_pool()
+            if pool is None:
+                return {
+                    "error": "Database connection not available (asyncpg not installed)",
+                    "fallback_report": {
+                        "message": "Database reporting requires asyncpg package",
+                        "generated_at": datetime.now().isoformat()
+                    }
+                }
             
             async with pool.acquire() as conn:
                 # Basic statistics
@@ -392,9 +482,8 @@ class StorageAgent(LlmAgent):
     
     def __init__(self, database_url: str, data_dir: str = "data"):
         tools = [
-            DatabaseStorageTool(database_url),
-            FileStorageTool(data_dir),
-            ReportingTool(database_url)
+            StoreProductDataTool(database_url, data_dir),
+            GenerateSummaryReportTool(database_url)
         ]
         
         super().__init__(
@@ -412,10 +501,12 @@ class StorageAgent(LlmAgent):
             5. Handle storage errors gracefully and provide backup options
             
             For each storage request:
-            1. Use database_storage tool to store data in PostgreSQL
-            2. Use file_storage tool to create CSV and JSON exports
-            3. Validate successful storage across all formats
-            4. Generate storage confirmation with file paths
+            1. Use store_product_data tool to store data in all formats
+            2. Validate successful storage across all formats
+            3. Generate storage confirmation with file paths
+            
+            For reporting requests:
+            1. Use generate_summary_report tool to create comprehensive reports
             
             Storage Formats:
             - PostgreSQL: Structured relational storage with indexing
@@ -435,7 +526,13 @@ class StorageAgent(LlmAgent):
     async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Main run method for the storage agent"""
         try:
-            # Extract data from input
+            # Check if this is a reporting request
+            if input_data.get('operation') == 'generate_report':
+                report_tool = self.tools[1]  # GenerateSummaryReportTool
+                report_type = input_data.get('report_type', 'summary')
+                return await report_tool(report_type)
+            
+            # Otherwise, handle storage request
             product_data = input_data.get('product_data')
             seo_data = input_data.get('seo_data')
             validation_data = input_data.get('validation_data')
@@ -443,44 +540,11 @@ class StorageAgent(LlmAgent):
             if not product_data or not seo_data or not validation_data:
                 return {"error": "product_data, seo_data, and validation_data are required"}
             
-            # Check if data passed quality validation
-            is_valid = validation_data.get("is_valid", False)
-            quality_score = validation_data.get("quality_score", 0)
+            # Use the main storage tool
+            storage_tool = self.tools[0]  # StoreProductDataTool
+            result = await storage_tool(product_data, seo_data, validation_data)
             
-            if not is_valid and quality_score < 60:
-                return {
-                    "error": "Data quality too low for storage",
-                    "quality_score": quality_score,
-                    "recommendation": "Improve data quality before storage"
-                }
-            
-            # Store to database
-            database_tool = self.tools[0]  # DatabaseStorageTool
-            database_result = await database_tool(product_data, seo_data, validation_data)
-            
-            if "error" in database_result:
-                logger.warning(f"Database storage failed: {database_result['error']}")
-                database_result = {"success": False, "error": database_result['error']}
-            
-            # Store to files
-            file_tool = self.tools[1]  # FileStorageTool
-            file_result = await file_tool(product_data, seo_data, validation_data)
-            
-            if "error" in file_result:
-                return file_result
-            
-            # Combine results
-            return {
-                "success": True,
-                "database_storage": database_result,
-                "file_storage": file_result,
-                "quality_score": quality_score,
-                "storage_summary": {
-                    "csv_path": file_result.get('csv_path'),
-                    "json_path": file_result.get('json_path'),
-                    "database_stored": database_result.get('success', False)
-                }
-            }
+            return result
             
         except Exception as e:
             logger.error(f"Storage Agent error: {e}")
@@ -502,7 +566,7 @@ class StorageAgent(LlmAgent):
         """Generate a summary report of stored data"""
         try:
             # Use the reporting tool directly
-            reporting_tool = self.tools[2]  # ReportingTool
+            reporting_tool = self.tools[1]  # GenerateSummaryReportTool
             result = await reporting_tool("summary")
             return result
             
