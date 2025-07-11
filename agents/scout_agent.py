@@ -117,10 +117,19 @@ async def _crawl_category(
                 'DNT': '1'
             }
             
+            # Configure SSL settings for Gratis
+            ssl_context = None
+            if config.name == "gratis":
+                import ssl
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+            
             async with session.get(
                 url, 
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=30)
+                timeout=aiohttp.ClientTimeout(total=30),
+                ssl=ssl_context
             ) as response:
                 if response.status != 200:
                     logger.warning(f"Failed to fetch {url}: {response.status}")
@@ -131,8 +140,13 @@ async def _crawl_category(
                 
                 product_links = _extract_product_links(soup, config)
                 if not product_links:
-                    logger.warning(f"No product links found on {url}")
-                    break
+                    # For dynamic sites like Gratis, try alternative extraction methods
+                    if config.name == "gratis":
+                        product_links = _extract_gratis_dynamic_links(html, config)
+                    
+                    if not product_links:
+                        logger.warning(f"No product links found on {url}")
+                        break
                 
                 product_urls.extend(product_links)
                 
@@ -165,10 +179,14 @@ def _extract_product_links(soup: BeautifulSoup, config: SiteConfig) -> List[str]
         ]
     elif config.name == "gratis":
         selectors = [
-            "div.product-item a.product-link",
-            "div.ems-prd-inner a",
-            "a.ems-prd-link",
-            "div.product a[href*='/p/']"
+            "a[href*='/p/']",  # General product links with /p/ pattern  
+            "div[class*='product'] a[href*='/p/']",  # Product divs with /p/ links
+            "a[href*='-p-']",  # Alternative product pattern
+            "div.product-item a",  # Generic product item links
+            "article a[href*='/p/']",  # Article-based product links
+            "li a[href*='/p/']",  # List-based product links
+            "[data-product-id] a",  # Data attribute links
+            "div[class*='card'] a[href*='/p/']"  # Card-based layouts
         ]
     elif config.name == "sephora_tr":
         selectors = [
@@ -197,10 +215,15 @@ def _extract_product_links(soup: BeautifulSoup, config: SiteConfig) -> List[str]
                 href = element.get("href")
                 if href:
                     full_url = urljoin(str(config.base_url), href)
+                    logger.debug(f"Checking URL: {full_url}")
                     if _is_valid_product_url(full_url, config):
                         links.append(full_url)
+                        logger.debug(f"Valid product URL: {full_url}")
             if links:  # If we found links, stop trying other selectors
+                logger.info(f"Found {len(links)} valid product links with selector: {selector}")
                 break
+        else:
+            logger.debug(f"No elements found with selector: {selector}")
     
     return list(set(links))  # Remove duplicates
 
@@ -209,7 +232,7 @@ def _has_next_page(soup: BeautifulSoup, config: SiteConfig) -> bool:
     """Check if there's a next page with updated selectors"""
     next_selectors = {
         "trendyol": ["a.pagination-next", "div.pagination a:last-child", "a[title='Sonraki']"],
-        "gratis": ["a.next-page", "li.next a", "a[rel='next']"],
+        "gratis": ["a[href*='page=']", "a[rel='next']", "link[rel='next']", ".pagination a[href*='page=']"],
         "sephora_tr": ["a.next", "button.next-page", "a[aria-label='Next']"],
         "rossmann": ["a.pagination-next", "li.next a", "a.next-page"]
     }
@@ -222,6 +245,55 @@ def _has_next_page(soup: BeautifulSoup, config: SiteConfig) -> bool:
     return False
 
 
+def _extract_gratis_dynamic_links(html: str, config: SiteConfig) -> List[str]:
+    """
+    Extract product links from Gratis dynamic content by looking for patterns in:
+    1. Preload link tags (product images)
+    2. JSON-LD data 
+    3. Script tags with product data
+    4. Image URLs with product IDs
+    """
+    import re
+    links = []
+    
+    # Method 1: Extract from preload image URLs 
+    # Gratis preloads product images like: https://rio.gratis.retter.io/.../10207346-VyBUODiUKc-01_1024x1024.jpg
+    image_pattern = r'https://rio\.gratis\.retter\.io/[^/]+/CALL/Image/getImage/(\d+)-[^"]*\.jpg'
+    product_ids = re.findall(image_pattern, html)
+    
+    # Convert image product IDs to product URLs
+    for product_id in set(product_ids):  # Remove duplicates
+        product_url = f"https://www.gratis.com/p/{product_id}"
+        links.append(product_url)
+    
+    # Method 2: Look for existing /p/ links in HTML even if not properly parsed
+    url_pattern = r'href=["\']([^"\']*\/p\/[^"\']*)["\']'
+    found_urls = re.findall(url_pattern, html)
+    
+    for url in found_urls:
+        if url.startswith('/'):
+            full_url = f"https://www.gratis.com{url}"
+        else:
+            full_url = url
+        if _is_valid_product_url(full_url, config):
+            links.append(full_url)
+    
+    # Method 3: Extract from Next.js data or JSON-LD
+    json_pattern = r'"url"\s*:\s*"([^"]*\/p\/[^"]*)"'
+    json_urls = re.findall(json_pattern, html)
+    
+    for url in json_urls:
+        if url.startswith('/'):
+            full_url = f"https://www.gratis.com{url}"
+        else:
+            full_url = url
+        if _is_valid_product_url(full_url, config):
+            links.append(full_url)
+    
+    logger.debug(f"Extracted {len(links)} dynamic links from Gratis")
+    return list(set(links))  # Remove duplicates
+
+
 def _is_valid_product_url(url: str, config: SiteConfig) -> bool:
     """Check if URL is a valid product URL based on site patterns"""
     parsed = urlparse(url)
@@ -230,12 +302,15 @@ def _is_valid_product_url(url: str, config: SiteConfig) -> bool:
     # Site-specific product URL patterns
     if config.name == "trendyol":
         # Trendyol product URLs contain '/p-' followed by product ID
-        return '/p-' in path and not any(pattern in path for pattern in [
-            '/butik/', '/sr/', '/magaza/', '/hesabim/', '/sepetim/'
+        is_valid = '/p-' in path and not any(pattern in path for pattern in [
+            '/butik/', '/sr/', '/magaza/', '/hesabim/', '/sepetim/', '/kategori/', '/c-'
         ])
+        if not is_valid:
+            logger.debug(f"Trendyol URL rejected: {path}")
+        return is_valid
     elif config.name == "gratis":
-        # Gratis product URLs end with '/p/' followed by product code
-        return '/p/' in path and path.count('/p/') == 1
+        # Gratis product URLs contain '/p/' pattern or end with '-p-productid'
+        return ('/p/' in path and path.count('/p/') == 1) or '-p-' in path
     elif config.name == "sephora_tr":
         # Sephora product URLs contain '/p/' pattern
         return '/p/' in path

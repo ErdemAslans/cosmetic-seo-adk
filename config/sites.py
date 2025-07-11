@@ -61,27 +61,34 @@ SITE_CONFIGS = [
         name="gratis",
         base_url="https://www.gratis.com",
         category_paths=[
-            "/makyaj-c-501",
-            "/cilt-bakim-c-502",
-            "/erkek-bakim-c-505",
-            "/cilt-bakim/cilt-temizleme-urunleri-c-50201"
+            "/makyaj",
+            "/cilt-bakim", 
+            "/parfum",
+            "/ruj",
+            "/oje",
+            "/fondoten"
         ],
         selectors={
-            "product_link": "a.product-image-for-grid-item",
-            "next_page": ".pagination-next a",
-            "name": "h5.title",
-            "brand": "h5.title",
-            "price": ".product-price .amount",
-            "description": "div.product-detail-tab-content",
-            "ingredients": "div.ingredients p",
-            "features": "div.features-list li",
-            "reviews": "div.comment-detail",
-            "images": "img.product-image"
+            "product_link": "a[href*='/p/']",
+            "next_page": "a[href*='page=']",
+            "name": "h1, .product-name, .product-title",
+            "brand": ".brand-name, .product-brand",
+            "price": ".price, .product-price, [class*='price']",
+            "description": ".product-description, .product-detail",
+            "ingredients": ".ingredients, .product-ingredients",
+            "features": ".features, .product-features",
+            "reviews": ".reviews, .product-reviews",
+            "images": "img[src*='gratis']"
         },
-        rate_limit=2.5,
-        max_pages=40,
+        rate_limit=3.0,
+        max_pages=20,
         headers={
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
         }
     ),
     
