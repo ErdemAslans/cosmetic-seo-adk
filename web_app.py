@@ -126,9 +126,9 @@ class CosmeticSEOWebSystem:
                 "message": f"🔍 Scout Agent {site} sitesinde '{category}' ürünlerini arıyor..."
             })
             
-            # Direct tool call instead of agent.run()
-            from agents.scout_agent import discover_product_urls
-            scout_result = await discover_product_urls(site, max_products)
+            # Use modern scraper for advanced URL discovery
+            from agents.modern_scraper_agent import discover_product_urls_advanced
+            scout_result = await discover_product_urls_advanced(site, max_products)
             
             if not scout_result or "discovered_urls" not in scout_result:
                 raise Exception("Scout Agent URL bulamadı")
@@ -150,9 +150,9 @@ class CosmeticSEOWebSystem:
                     "message": f"🌐 Scraper Agent veri çekiyor... ({idx+1}/{total_urls})"
                 })
                 
-                # Direct tool call instead of .run()
-                from agents.scraper_agent import scrape_product_data
-                scraper_result = await scrape_product_data(url, site)
+                # Use modern scraper for advanced data extraction
+                from agents.modern_scraper_agent import scrape_product_data_advanced
+                scraper_result = await scrape_product_data_advanced(url, site)
                 
                 if not scraper_result or "product_data" not in scraper_result:
                     continue
@@ -189,8 +189,8 @@ class CosmeticSEOWebSystem:
                 result = {
                     "product": analyzer_result.get("cleaned_product", {}),
                     "seo": seo_result,
-                    "quality_score": quality_result.get("quality_score", 0),
-                    "quality_report": quality_result.get("report", {}),
+                    "quality_score": quality_result.get("overall_quality_score", quality_result.get("quality_score", 0)),
+                    "quality_report": quality_result.get("validation_details", quality_result.get("report", {})),
                     "is_valid": quality_result.get("is_valid", False),
                     "processed_at": time.time(),
                     "ai_insights": {
@@ -337,9 +337,15 @@ class CosmeticSEOWebSystem:
         json_path = os.path.join(self.results_dir, f"{prefix}_{timestamp}.json")
         csv_path = os.path.join(self.results_dir, f"{prefix}_{timestamp}.csv")
         
-        # JSON kaydet
+        # JSON kaydet - URL objelerini string'e çevir
+        def json_serializer(obj):
+            """Custom JSON serializer for URL objects"""
+            if hasattr(obj, '__str__'):
+                return str(obj)
+            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+        
         with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
+            json.dump(results, f, ensure_ascii=False, indent=2, default=json_serializer)
         
         # CSV için veriyi düzenle
         csv_data = []
@@ -416,7 +422,19 @@ async def get_status(task_id: str):
     if task_id not in active_tasks:
         return JSONResponse({"error": "Task bulunamadı"}, status_code=404)
     
-    return JSONResponse(active_tasks[task_id])
+    # Convert any non-serializable objects to strings
+    def make_serializable(obj):
+        if isinstance(obj, dict):
+            return {k: make_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [make_serializable(item) for item in obj]
+        elif hasattr(obj, '__str__') and not isinstance(obj, (str, int, float, bool)):
+            return str(obj)
+        else:
+            return obj
+    
+    task_data = make_serializable(active_tasks[task_id])
+    return JSONResponse(task_data)
 
 @app.get("/download/{task_id}/{format}")
 async def download(task_id: str, format: str):

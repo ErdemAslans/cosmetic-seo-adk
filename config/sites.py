@@ -61,26 +61,26 @@ SITE_CONFIGS = [
         name="gratis",
         base_url="https://www.gratis.com",
         category_paths=[
-            "/makyaj",
-            "/cilt-bakim", 
-            "/parfum",
-            "/ruj",
-            "/oje",
-            "/fondoten"
+            "/makyaj-c-1",
+            "/cilt-bakim-c-2", 
+            "/parfum-c-3",
+            "/ruj-c-4",
+            "/oje-c-5",
+            "/fondoten-c-6"
         ],
         selectors={
-            "product_link": "a[href*='/p/']",
-            "next_page": "a[href*='page=']",
-            "name": "h1, .product-name, .product-title",
-            "brand": ".brand-name, .product-brand",
-            "price": ".price, .product-price, [class*='price']",
-            "description": ".product-description, .product-detail",
-            "ingredients": ".ingredients, .product-ingredients",
-            "features": ".features, .product-features",
-            "reviews": ".reviews, .product-reviews",
-            "images": "img[src*='gratis']"
+            "product_link": "a[href*='/p/'], .product-item a, .product-card a, [data-product-id] a, .ems-prd-link a",
+            "next_page": "a[href*='page='], .pagination-next, .next-page",
+            "name": "h1, .product-name, .product-title, .ems-prd-name, .prd-name, [data-testid='product-name']",
+            "brand": ".brand-name, .product-brand, .ems-prd-brand, .prd-brand, .brand",
+            "price": ".price, .product-price, .ems-prd-price, .prd-price, .price-current, [class*='price']",
+            "description": ".product-description, .product-detail, .ems-prd-desc, .prd-desc",
+            "ingredients": ".ingredients, .product-ingredients, .ems-prd-ingredients",
+            "features": ".features, .product-features, .ems-prd-features",
+            "reviews": ".reviews, .product-reviews, .ems-prd-reviews",
+            "images": "img[src*='gratis'], .product-image, .ems-prd-image"
         },
-        rate_limit=3.0,
+        rate_limit=5.0,
         max_pages=20,
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

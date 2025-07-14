@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     chromium \
     postgresql-client \
     curl \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Chrome/Chromium environment variables
@@ -21,9 +22,11 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download required NLP models
+# Download required NLP models and install Playwright browsers
 RUN python -c "import spacy; spacy.cli.download('en_core_web_sm')"
 RUN python -c "import nltk; nltk.download('stopwords', quiet=True); nltk.download('punkt', quiet=True)"
+RUN playwright install chromium
+RUN playwright install-deps chromium
 
 # Copy application code
 COPY . .

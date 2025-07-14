@@ -52,9 +52,9 @@ class CosmeticSEOOrchestrator:
             logger.info(f"Step 1: Discovering URLs from {site_name}")
             
             try:
-                # Direct tool call for better reliability
-                from agents.scout_agent import discover_product_urls
-                scout_result = await discover_product_urls(site_name, max_products)
+                # Use modern scraper for maximum reliability
+                from agents.modern_scraper_agent import discover_product_urls_advanced
+                scout_result = await discover_product_urls_advanced(site_name, max_products)
                 
                 if "discovered_urls" in scout_result:
                     discovered_urls = scout_result["discovered_urls"]
@@ -121,8 +121,8 @@ class CosmeticSEOOrchestrator:
         try:
             # Step 2: Scraper - Extract product data directly
             try:
-                from agents.scraper_agent import scrape_product_data
-                scraper_result = await scrape_product_data(url, site_name)
+                from agents.modern_scraper_agent import scrape_product_data_advanced
+                scraper_result = await scrape_product_data_advanced(url, site_name)
             except Exception as e:
                 logger.error(f"Scraper error for {url}: {e}")
                 return {"url": url, "error": f"Scraper error: {str(e)}"}

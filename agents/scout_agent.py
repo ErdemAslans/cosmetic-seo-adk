@@ -309,8 +309,44 @@ def _is_valid_product_url(url: str, config: SiteConfig) -> bool:
             logger.debug(f"Trendyol URL rejected: {path}")
         return is_valid
     elif config.name == "gratis":
-        # Gratis product URLs contain '/p/' pattern or end with '-p-productid'
-        return ('/p/' in path and path.count('/p/') == 1) or '-p-' in path
+        # Gratis product URLs contain '/p/' pattern with proper validation
+        # Valid: /p/10800431, /oje/pastel-pure-oje-623-p-10800431
+        # Invalid: /makyaj, /c-kategori, /b-marka, /kurumsal, /mağaza
+        
+        # Reject obvious non-product patterns
+        invalid_patterns = [
+            '/c-', '/b-', '/kategori/', '/marka/', '/kurumsal', '/magaza/',
+            '/kampanya', '/hakkimizda', '/iletisim', '/sepet', '/hesap',
+            '/uyelik', '/giris', '/cikis', '/arama', '/search', '/brand',
+            '/category', '/help', '/about', '/login', '/register', '/cart',
+            '/checkout', '/account', '/stores', '/store-locator',
+            '/mağazalar', '/mağaza-bul', '/en-yakin', '/uygun-fiyatli',
+            '/gratis-turkiye', '/markalarimiz', '/sitemap'
+        ]
+        
+        # Check for invalid patterns first
+        if any(pattern in path for pattern in invalid_patterns):
+            return False
+        
+        # Valid product URL patterns for Gratis
+        # Pattern 1: Direct product ID like /p/10800431
+        if '/p/' in path and path.count('/p/') == 1:
+            # Extract part after /p/
+            after_p = path.split('/p/', 1)[1]
+            # Should be numeric product ID (optionally with trailing slash)
+            if after_p.rstrip('/').isdigit() and len(after_p.rstrip('/')) >= 6:
+                return True
+        
+        # Pattern 2: Product with category like /oje/pastel-pure-oje-623-p-10800431
+        if '-p-' in path and path.count('-p-') == 1:
+            # Extract product ID after -p-
+            product_id = path.split('-p-', 1)[1].rstrip('/')
+            # Should be numeric product ID
+            if product_id.isdigit() and len(product_id) >= 6:
+                return True
+        
+        # If none of the valid patterns match, it's not a product URL
+        return False
     elif config.name == "sephora_tr":
         # Sephora product URLs contain '/p/' pattern
         return '/p/' in path
