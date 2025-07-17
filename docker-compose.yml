@@ -38,6 +38,17 @@ services:
       TEST_MODE: "false"
       ENABLE_AUTO_RUN: "false"
       
+      # Yeni environment variables
+      ENABLE_PLAYWRIGHT: "true"
+      USE_PROXY: "false"
+      DEBUG_MODE: "false"
+      RATE_LIMIT_MULTIPLIER: "1.5"
+      MAX_RETRIES: "3"
+      TIMEOUT_SECONDS: "30"
+      
+      # Database fallback
+      USE_FILE_STORAGE_ONLY: "false"
+      
       # Email settings (if needed)
       SENDER_EMAIL: vverlumea@gmail.com
       SENDER_PASSWORD: fpqfowuxgfxfuswf

@@ -17,19 +17,21 @@ MODERN_SITE_CONFIGS = [
             "/kozmetik/guzellik-x-c1309"
         ],
         selectors={
-            "product_link": "div.p-card-wrppr a, .product-item a, a[href*='/p-'], [data-id] a",
+            # Daha spesifik selector'lar
+            "product_link": "div.p-card-wrppr > a[href*='-p-']",
+            "category": "div.breadcrumb a:nth-child(3), nav.breadcrumb a:nth-child(2)",
             "next_page": "a.pagination-next, .pagination-next, a[aria-label='Next']",
-            "name": "h1.pr-new-br span, h1, .product-name, .product-title",
-            "brand": "h1.pr-new-br a, .product-brand, .brand-name, .brand",
-            "price": ".prc-dsc, .product-price, .price, .current-price",
-            "description": ".detail-desc-list, .product-description, .description, .detail-attr-list",
-            "ingredients": ".ingredient-list li, .ingredients li, .detail-attr-item:contains('İçerik')",
-            "features": "ul.detail-attr-list li, .product-features li, .features li",
+            "name": "h1.pr-new-br > span, h1.product-name",
+            "brand": "h1.pr-new-br > a, a.product-brand-name-with-link",
+            "price": "span.prc-dsc, span.prc-box-dscntd",
+            "description": "div.info-wrapper, section.detail-desc-list",
+            "ingredients": "div.detail-attr-item:has(span:contains('İçindekiler')) div.detail-attr-value",
+            "features": "ul.detail-attr-list > li",
             "reviews": ".comment-text, .review-text, .user-comment",
-            "images": "img.detail-img, .product-images img, .gallery img"
+            "images": "div.product-slide img[data-src], img.detail-section-img"
         },
-        rate_limit=2.0,
-        max_pages=20,
+        rate_limit=1.5,
+        max_pages=15,
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -51,22 +53,27 @@ MODERN_SITE_CONFIGS = [
             "/cilt-bakimi-c-11", 
             "/parfum-c-14",
             "/sac-bakimi-c-13",
-            "/vucut-bakimi-c-16"
+            "/vucut-bakimi-c-16",
+            "/makyaj",  # Alternative paths
+            "/cilt-bakimi",
+            "/parfum"
         ],
         selectors={
-            "product_link": "a[href*='/p/'], .product-item a, .product-card a, [data-product-id] a",
-            "next_page": "a[href*='page='], a[rel='next'], .pagination-next, button[aria-label='Next']",
-            "name": "h1, .product-name, .product-title, .ems-prd-name",
-            "brand": ".product-brand, .brand-name, .brand, .ems-prd-brand",
-            "price": ".product-price, .price, .ems-prd-price, [class*='price']",
-            "description": ".product-description, .description, .ems-prd-description, .product-detail",
-            "ingredients": ".ingredients, .product-ingredients, .ingredients-list li",
-            "features": ".product-features li, .features li, .feature-list li",
-            "reviews": ".review-content, .reviews .review, .comment-text",
-            "images": ".product-image img, .gallery img, img[src*='gratis'], .ems-prd-image img"
+            # Gratis için spesifik product link selector'ları
+            "product_link": "a[href*='/p/'], a[href*='-p-'], [data-testid*='product'] a, .product-card a, .product-item a",
+            "category": "nav[aria-label='breadcrumb'] a:nth-child(2), .breadcrumb a:nth-child(2)",
+            "next_page": ".pagination-next, .page-next, a[href*='page='], button[aria-label='Next'], .load-more",
+            "name": "h1[class*='product-name'], h1[class*='ProductName'], h1, .product-name, .product-title",
+            "brand": "a[class*='brand'], span[class*='Brand'], .brand, .product-brand",
+            "price": "span[class*='price']:has-text('₺'), div[class*='Price'] span, .price, .product-price",
+            "description": "div[class*='description'], section[class*='Description'], .description, .product-detail",
+            "ingredients": "div[class*='ingredients'] li, section:has(h2:contains('İçindekiler')) li, .ingredients li",
+            "features": "div[class*='features'] li, ul[class*='Features'] li, .features li",
+            "reviews": ".review-content, .reviews .review-item, .comment-text, .review-text",
+            "images": "div[class*='gallery'] img, img[class*='ProductImage'], .product-image img, .gallery img"
         },
-        rate_limit=3.0,
-        max_pages=15,
+        rate_limit=10.0,  # Anti-bot koruması için çok yavaş
+        max_pages=2,    # Az sayfa - dikkat çekmemek için
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -74,7 +81,11 @@ MODERN_SITE_CONFIGS = [
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
-            "Cache-Control": "max-age=0"
+            "Cache-Control": "max-age=0",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "DNT": "1"
         }
     ),
     

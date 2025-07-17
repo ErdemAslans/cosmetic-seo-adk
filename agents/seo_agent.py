@@ -87,7 +87,7 @@ class KeywordExtractionTool(BaseTool):
             return {"error": str(e)}
     
     def _extract_keywords(self, product: ProductData, extracted_terms: Dict[str, Any]) -> List[str]:
-        """Extract keywords using multiple NLP techniques"""
+        """Extract keywords using multiple NLP techniques with proper word separation"""
         keywords = []
         
         # Add cosmetic terms from analyzer
@@ -115,9 +115,27 @@ class KeywordExtractionTool(BaseTool):
         type_keywords = self._extract_product_type_keywords(product)
         keywords.extend(type_keywords)
         
-        # Remove duplicates and filter
-        keywords = list(dict.fromkeys(keywords))
-        return [kw for kw in keywords if self._is_valid_keyword(kw)][:30]
+        # CRITICAL FIX: Properly separate words and clean keywords
+        cleaned_keywords = []
+        for keyword in keywords:
+            if keyword:
+                # Turkish karakterleri koru ve kelimeleri düzgün ayır
+                words = re.findall(r'[a-zA-ZğüşıöçĞÜŞİÖÇ]+', str(keyword))
+                for word in words:
+                    if len(word) > 2:  # 2 harften uzun kelimeleri al
+                        cleaned_keywords.append(word.lower())
+        
+        # Duplike kelimeleri kaldır
+        cleaned_keywords = list(dict.fromkeys(cleaned_keywords))
+        
+        # Turkish stop words'leri filtrele
+        turkish_stop_words = {'ve', 'ile', 'için', 'bir', 'bu', 'da', 'de', 'den', 'dan', 'nin', 'nın', 'nun', 'nün', 'yi', 'yı', 'yu', 'yü', 'na', 'ne', 'ta', 'te', 'la', 'le'}
+        cleaned_keywords = [kw for kw in cleaned_keywords 
+                           if kw not in turkish_stop_words 
+                           and kw not in self.stop_words
+                           and self._is_valid_keyword(kw)]
+        
+        return cleaned_keywords[:30]
     
     def _get_full_text(self, product: ProductData) -> str:
         """Get full text from product data"""

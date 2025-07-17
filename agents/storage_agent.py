@@ -33,14 +33,18 @@ class DatabaseStorageTool(BaseTool):
         self.pool = None
     
     async def _get_pool(self):
-        """Get database connection pool"""
+        """Get database connection pool with fallback"""
         if not self.pool:
             try:
                 import asyncpg
                 self.pool = await asyncpg.create_pool(self.database_url)
                 await self._initialize_database()
+                logger.info("Database connection established")
             except ImportError:
-                logger.warning("asyncpg not available, database storage will be skipped")
+                logger.warning("asyncpg not available, using file storage only")
+                self.pool = None
+            except Exception as e:
+                logger.error(f"Database connection failed: {e}")
                 self.pool = None
         return self.pool
     

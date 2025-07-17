@@ -51,14 +51,24 @@ class ModernScraperAgent:
         ]
     
     async def initialize_browser(self) -> None:
-        """Initialize ultra-stealth browser"""
+        """Initialize ultra-stealth browser with Playwright"""
         try:
             playwright = await async_playwright().start()
             
-            # Launch browser with maximum stealth
+            # Proxy varsa kullan
+            proxy_settings = None
+            if self.proxy_list:
+                proxy = random.choice(self.proxy_list)
+                proxy_settings = {"server": proxy}
+            
+            # Launch browser with maximum stealth - Production ready
             self.browser = await playwright.chromium.launch(
-                headless=True,
+                headless=True,  # Production için True
+                proxy=proxy_settings,
                 args=[
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-web-security',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
@@ -71,7 +81,6 @@ class ModernScraperAgent:
                     '--disable-renderer-backgrounding',
                     '--disable-features=TranslateUI',
                     '--disable-ipc-flooding-protection',
-                    '--disable-blink-features=AutomationControlled',
                     '--disable-component-extensions-with-background-pages',
                     '--disable-default-apps',
                     '--disable-extensions',
@@ -88,7 +97,7 @@ class ModernScraperAgent:
                 ]
             )
         
-            # Create ultra-stealth context
+            # Create ultra-stealth context - Her sayfa için yeni context (daha güvenli)
             self.context = await self.browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
                 user_agent=random.choice(self.user_agents),
@@ -162,6 +171,8 @@ class ModernScraperAgent:
         # Try ALL category paths to find maximum products
         for category_path in site_config.category_paths:
             logger.info(f"Processing category path: {category_path}")
+            full_url = urljoin(str(site_config.base_url), category_path)
+            logger.info(f"Full URL: {full_url}")
             
             try:
                 # Strategy 1: Classical scraping with modern selectors
@@ -169,10 +180,18 @@ class ModernScraperAgent:
                 discovered_urls.extend(urls)
                 logger.info(f"Classical discovery found {len(urls)} URLs for {category_path}")
                 
+                # Debug: Log sample URLs from classical discovery
+                for i, url in enumerate(urls[:3]):
+                    logger.info(f"  Classical URL {i+1}: {url}")
+                
                 # Strategy 2: AI-powered pattern recognition for each category
                 ai_urls = await self._ai_pattern_discovery(site_config, category_path)
                 discovered_urls.extend(ai_urls)
                 logger.info(f"AI pattern discovery found {len(ai_urls)} URLs for {category_path}")
+                
+                # Debug: Log sample URLs from AI discovery
+                for i, url in enumerate(ai_urls[:3]):
+                    logger.info(f"  AI URL {i+1}: {url}")
                 
                 # Stop if we have enough URLs
                 if len(discovered_urls) >= max_products:
@@ -214,49 +233,82 @@ class ModernScraperAgent:
         urls = []
         
         try:
+            full_url = urljoin(str(config.base_url), category_path)
+            logger.info(f"Navigating to: {full_url}")
+            
             # Navigate with human-like behavior
-            await self._human_like_navigation(page, urljoin(str(config.base_url), category_path))
+            await self._human_like_navigation(page, full_url)
             
             # Wait for dynamic content
             await page.wait_for_load_state('networkidle', timeout=30000)
             await asyncio.sleep(random.uniform(2, 4))
             
+            # Check if page loaded successfully
+            page_title = await page.title()
+            logger.info(f"Page loaded, title: {page_title}")
+            
             # Try multiple selector strategies
             selectors = self._get_adaptive_selectors(config.name)
+            logger.info(f"Testing {len(selectors)} selector strategies for {config.name}")
             
-            for selector_group in selectors:
+            for i, selector_group in enumerate(selectors):
                 try:
-                    elements = await page.query_selector_all(selector_group['product_link'])
+                    selector = selector_group['product_link']
+                    logger.info(f"Testing selector {i+1}: {selector_group['name']} - {selector}")
+                    
+                    elements = await page.query_selector_all(selector)
+                    logger.info(f"  Found {len(elements)} elements with this selector")
+                    
                     if elements:
-                        for element in elements:
+                        current_urls = []
+                        for j, element in enumerate(elements):
                             href = await element.get_attribute('href')
                             if href:
-                                full_url = urljoin(str(config.base_url), href)
-                                urls.append(full_url)
+                                full_product_url = urljoin(str(config.base_url), href)
+                                current_urls.append(full_product_url)
+                                if j < 3:  # Log first 3 URLs for debugging
+                                    logger.info(f"    URL {j+1}: {full_product_url}")
                         
-                        if urls:
-                            logger.info(f"Found {len(urls)} URLs with selector: {selector_group['name']}")
-                            break
+                        urls.extend(current_urls)
+                        logger.info(f"  Added {len(current_urls)} URLs from selector: {selector_group['name']}")
+                        
+                        # If we found URLs with this selector, continue to try others too for Gratis
+                        if current_urls and config.name == "gratis":
+                            continue  # Try all selectors for Gratis
+                        elif current_urls:
+                            break  # For other sites, stop after first successful selector
                             
                 except Exception as e:
-                    logger.debug(f"Selector {selector_group['name']} failed: {e}")
+                    logger.error(f"Selector {selector_group['name']} failed: {e}")
                     continue
             
             # Scroll to load more products (for infinite scroll)
+            logger.info(f"Found {len(urls)} URLs before scrolling")
             if len(urls) < 20:
+                logger.info("Attempting infinite scroll to load more products...")
                 await self._handle_infinite_scroll(page)
                 
                 # Try selectors again after scroll
                 for selector_group in selectors:
                     try:
-                        elements = await page.query_selector_all(selector_group['product_link'])
+                        selector = selector_group['product_link']
+                        elements = await page.query_selector_all(selector)
+                        scroll_urls = []
                         for element in elements:
                             href = await element.get_attribute('href')
                             if href:
-                                full_url = urljoin(str(config.base_url), href)
-                                urls.append(full_url)
-                    except:
+                                full_product_url = urljoin(str(config.base_url), href)
+                                scroll_urls.append(full_product_url)
+                        
+                        new_urls = [url for url in scroll_urls if url not in urls]
+                        urls.extend(new_urls)
+                        if new_urls:
+                            logger.info(f"  Found {len(new_urls)} additional URLs after scroll")
+                    except Exception as e:
+                        logger.debug(f"Scroll retry failed for {selector_group['name']}: {e}")
                         continue
+                        
+            logger.info(f"Classical discovery total: {len(urls)} URLs")
             
         finally:
             await page.close()
@@ -400,28 +452,50 @@ class ModernScraperAgent:
     async def _human_like_navigation(self, page: Page, url: str) -> None:
         """Navigate like a human with realistic delays and behavior"""
         # Random delay before navigation
-        await asyncio.sleep(random.uniform(1, 3))
+        await asyncio.sleep(random.uniform(2, 5))
         
-        # Navigate to page
-        await page.goto(url, wait_until='domcontentloaded', timeout=30000)
-        
-        # Human-like mouse movement
-        await page.mouse.move(
-            random.randint(100, 800), 
-            random.randint(100, 600)
-        )
-        
-        # Random scroll behavior
-        await page.evaluate("""
-            () => {
-                // Random small scrolls
-                window.scrollBy(0, Math.random() * 200);
-                setTimeout(() => window.scrollBy(0, Math.random() * 300), 1000);
-            }
-        """)
-        
-        # Wait for page to fully load
-        await page.wait_for_load_state('networkidle', timeout=30000)
+        try:
+            # Navigate to page
+            await page.goto(url, wait_until='domcontentloaded', timeout=30000)
+            
+            # Check for anti-bot measures
+            content = await page.content()
+            if any(keyword in content.lower() for keyword in ['blocked', 'robot', 'captcha', 'cloudflare']):
+                logger.warning(f"Potential bot detection on {url}")
+                # Wait longer if blocked
+                await asyncio.sleep(random.uniform(10, 15))
+            
+            # Rastgele mouse hareketleri
+            for _ in range(random.randint(2, 4)):
+                await page.mouse.move(
+                    random.randint(100, 800),
+                    random.randint(100, 600),
+                    steps=random.randint(10, 20)
+                )
+                await asyncio.sleep(random.uniform(0.1, 0.3))
+            
+            # Rastgele scroll
+            await page.evaluate("""
+                () => {
+                    const scrollHeight = Math.random() * 300 + 100;
+                    window.scrollBy({
+                        top: scrollHeight,
+                        left: 0,
+                        behavior: 'smooth'
+                    });
+                }
+            """)
+            
+            # Rastgele bekleme
+            await asyncio.sleep(random.uniform(2, 5))
+            
+            # Wait for page to fully load
+            await page.wait_for_load_state('networkidle', timeout=30000)
+            
+        except Exception as e:
+            logger.error(f"Navigation failed for {url}: {e}")
+            # Try to continue anyway
+            await asyncio.sleep(random.uniform(5, 10))
         
     async def _handle_infinite_scroll(self, page: Page) -> None:
         """Handle infinite scroll to load more products"""
@@ -461,29 +535,33 @@ class ModernScraperAgent:
             "trendyol": [
                 {
                     "name": "Primary Trendyol",
-                    "product_link": "div.p-card-wrppr a, .product-item a, [data-id] a"
+                    "product_link": "div.p-card-wrppr a[href*='/p-'], .product-item a[href*='/p-'], .prd-link a[href*='/p-']"
                 },
                 {
                     "name": "Alternative Trendyol", 
-                    "product_link": "a[href*='/p-'], .product-container a, .product-card a"
+                    "product_link": "a[href*='/p-']:not([href*='/c-']):not([href*='/category']), .product-container a[href*='/p-']"
                 },
                 {
                     "name": "Generic Trendyol",
-                    "product_link": "a[href*='trendyol.com'][href*='-p-']"
+                    "product_link": "a[href*='trendyol.com'][href*='-p-']:not([href*='/c-'])"
                 }
             ],
             "gratis": [
                 {
-                    "name": "Primary Gratis",
-                    "product_link": "a[href*='/p/'], [data-product-id] a, .product-item a"
+                    "name": "Primary Gratis Products",
+                    "product_link": "a[href*='-p-']:not([href*='-b-']), a[href*='/p/'], a[href*='/urun/'], a[href*='/product/']"
                 },
                 {
-                    "name": "Alternative Gratis",
-                    "product_link": "a[href*='gratis.com/p/'], .product-card a, .item-link"
+                    "name": "Gratis Product Cards", 
+                    "product_link": ".product-card a, .product-item a, [class*='product'] a, [data-testid*='product'] a"
                 },
                 {
-                    "name": "Generic Gratis",
-                    "product_link": "a[href*='/p/'][href*='gratis']"
+                    "name": "Gratis Link Patterns",
+                    "product_link": "a[href*='gratis.com'][href*='-p-'], a[href*='gratis.com'][href*='/p/']"
+                },
+                {
+                    "name": "Generic Gratis Links",
+                    "product_link": "a[href]:not([href*='javascript']):not([href*='mailto']):not([href*='tel'])"
                 }
             ],
             "sephora_tr": [
@@ -554,44 +632,50 @@ class ModernScraperAgent:
                 logger.debug(f"URL {url} rejected - invalid page type")
                 return False
             
-            # For testing - accept almost all URLs that could be products
-            # Site-specific very permissive validation
+            # Site-specific STRICT validation
             if config.name == "trendyol":
-                # Accept URLs with product-like patterns
-                if '/p-' in path or '-p-' in path:
-                    logger.debug(f"URL {url} accepted - Trendyol product pattern")
-                    return True
-                # Also accept other potentially valid URLs
-                if len(path) > 10 and path.count('/') >= 2:
-                    logger.debug(f"URL {url} accepted - Trendyol potential product")
-                    return True
-                    
+                # Sadece -p-XXXXX pattern'i kabul et (minimum 5 digit)
+                if re.search(r'-p-\d{5,}', path):
+                    # Kategori/kampanya URL'lerini reddet
+                    exclude_patterns = ['/butik/', '/sr/', '/magaza/', '/hesabim/', 
+                                      '/sepetim/', '/kategori/', '/c-', '/kampanya',
+                                      'uygun-fiyatli', 'indirimli', '/x-c', '/kozmetik-x-c',
+                                      '/cilt-bakimi-x-c', '/makyaj-x-c', '/parfum-x-c', '/guzellik-x-c']
+                    if not any(pattern in path for pattern in exclude_patterns):
+                        logger.debug(f"URL {url} accepted - Trendyol strict product pattern")
+                        return True
+                logger.debug(f"URL {url} rejected - Trendyol strict validation failed")
+                return False
+                
             elif config.name == "gratis":
-                # Gratis specific product patterns
-                if '/p/' in path or '-p-' in path:
-                    logger.debug(f"URL {url} accepted - Gratis product pattern")
-                    return True
-                # Exclude category pages and other non-product pages
-                if any(exclude in path for exclude in ['/c-', '/kampanyalar', '/yardim', '/hakkimizda', '/iletisim', '/sepet', '/hesap']):
-                    logger.debug(f"URL {url} rejected - Gratis non-product page")
+                # Gratis için çok geniş kabul - sadece belirgin sistem URL'lerini hariç tut
+                exclude_patterns = ['/kategori/', '/marka/', '/hesap', '/sepet', '/giris', '/kayit', 
+                                  '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', 
+                                  '/api/', '/static/', '/search?', '?', '/contact', '/about']
+                if any(pattern in path for pattern in exclude_patterns):
+                    logger.debug(f"URL {url} rejected - Gratis excluded pattern")
                     return False
-                # Accept product-like URLs with sufficient length
-                if len(path) > 10 and path.count('-') >= 2:
-                    logger.debug(f"URL {url} accepted - Gratis potential product")
-                    return True
-                    
-            elif config.name in ["sephora_tr", "rossmann"]:
-                if '/p/' in path or '/product/' in path:
-                    logger.debug(f"URL {url} accepted - {config.name} product pattern")
-                    return True
-                if len(path) > 5:
-                    logger.debug(f"URL {url} accepted - {config.name} potential product")
-                    return True
-            
-            # Universal fallback - very permissive for testing
-            if len(path) > 3 and path != '/':
-                logger.debug(f"URL {url} accepted - universal fallback")
+                logger.debug(f"URL {url} accepted - Gratis general acceptance")
                 return True
+                
+            elif config.name == "sephora_tr":
+                # Sephora için /p/ veya /product/ pattern'i (minimum 10 char)
+                if re.search(r'/p/[a-zA-Z0-9-]{10,}', path) or re.search(r'/product/[a-zA-Z0-9-]{10,}', path):
+                    logger.debug(f"URL {url} accepted - Sephora product pattern")
+                    return True
+                logger.debug(f"URL {url} rejected - Sephora strict validation failed")
+                return False
+                
+            elif config.name == "rossmann":
+                # Rossmann için /p/ veya /product/ pattern'i (minimum 8 char)
+                if re.search(r'/p/[a-zA-Z0-9-]{8,}', path) or re.search(r'/product/[a-zA-Z0-9-]{8,}', path):
+                    logger.debug(f"URL {url} accepted - Rossmann product pattern")
+                    return True
+                logger.debug(f"URL {url} rejected - Rossmann strict validation failed")
+                return False
+            
+            # Hiçbir pattern match etmezse reddet
+            logger.debug(f"URL {url} rejected - no strict pattern match")
             
             logger.debug(f"URL {url} rejected - no matching criteria")
             return False
@@ -641,7 +725,7 @@ class ModernScraperAgent:
             await page.close()
     
     async def _modern_selector_extraction(self, page: Page, site_name: str) -> Dict[str, Any]:
-        """Modern selector-based extraction with adaptive strategies"""
+        """Modern selector-based extraction with adaptive strategies and JavaScript fallback"""
         selectors = self._get_product_selectors(site_name)
         data = {}
         
@@ -681,6 +765,95 @@ class ModernScraperAgent:
                 except Exception as e:
                     logger.debug(f"Selector {selector} failed for {field}: {e}")
                     continue
+            
+            # JavaScript fallback if field is still empty
+            if not data.get(field):
+                try:
+                    js_value = await page.evaluate(f"""
+                        () => {{
+                            // {field} için akıllı extraction
+                            if ('{field}' === 'category') {{
+                                const breadcrumb = document.querySelector('nav[aria-label="breadcrumb"], .breadcrumb, nav.breadcrumb');
+                                if (breadcrumb) {{
+                                    const links = breadcrumb.querySelectorAll('a');
+                                    if (links.length > 1) {{
+                                        return links[1].textContent.trim();
+                                    }}
+                                }}
+                                // Alternative: look for category in page title or headings
+                                const title = document.title;
+                                if (title.includes('Makyaj')) return 'Makyaj';
+                                if (title.includes('Cilt Bakım')) return 'Cilt Bakımı';
+                                if (title.includes('Parfüm')) return 'Parfüm';
+                                if (title.includes('Saç Bakım')) return 'Saç Bakımı';
+                                return 'Kozmetik';
+                            }}
+                            
+                            if ('{field}' === 'description') {{
+                                // Tüm p tag'lerini kontrol et
+                                const paragraphs = document.querySelectorAll('p');
+                                for (const p of paragraphs) {{
+                                    const text = p.textContent.trim();
+                                    if (text.length > 100 && !text.includes('cookie') && !text.includes('gizlilik')) {{
+                                        return text;
+                                    }}
+                                }}
+                                
+                                // Alternative: look for any meaningful text in divs
+                                const divs = document.querySelectorAll('div');
+                                for (const div of divs) {{
+                                    const text = div.textContent.trim();
+                                    if (text.length > 50 && text.length < 1000 && 
+                                        (text.includes('ürün') || text.includes('kullanım') || text.includes('özellik'))) {{
+                                        return text;
+                                    }}
+                                }}
+                            }}
+                            
+                            if ('{field}' === 'name') {{
+                                // Try multiple heading selectors
+                                const headings = document.querySelectorAll('h1, h2, [class*="title"], [class*="name"]');
+                                for (const heading of headings) {{
+                                    const text = heading.textContent.trim();
+                                    if (text.length > 10 && text.length < 200) {{
+                                        return text;
+                                    }}
+                                }}
+                            }}
+                            
+                            if ('{field}' === 'brand') {{
+                                // Look for brand in various places
+                                const brandSelectors = ['[class*="brand"]', '[class*="marka"]', 'h1 a', '.manufacturer'];
+                                for (const selector of brandSelectors) {{
+                                    const element = document.querySelector(selector);
+                                    if (element) {{
+                                        const text = element.textContent.trim();
+                                        if (text.length > 2 && text.length < 50) {{
+                                            return text;
+                                        }}
+                                    }}
+                                }}
+                            }}
+                            
+                            if ('{field}' === 'price') {{
+                                // Look for price patterns
+                                const priceElements = document.querySelectorAll('*');
+                                for (const element of priceElements) {{
+                                    const text = element.textContent.trim();
+                                    if (text.match(/\d+[.,]\d+.*₺/) || text.match(/₺.*\d+[.,]\d+/)) {{
+                                        return text;
+                                    }}
+                                }}
+                            }}
+                            
+                            return '';
+                        }}
+                    """)
+                    if js_value and js_value.strip():
+                        data[field] = js_value.strip()
+                        logger.debug(f"JavaScript fallback succeeded for {field}: {js_value[:50]}...")
+                except Exception as e:
+                    logger.debug(f"JavaScript fallback failed for {field}: {e}")
         
         return data
     

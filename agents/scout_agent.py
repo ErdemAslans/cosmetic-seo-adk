@@ -168,38 +168,66 @@ def _extract_product_links(soup: BeautifulSoup, config: SiteConfig) -> List[str]
     """Extract product links from the page with updated selectors"""
     links = []
     
-    # Updated selectors for each site
+    # STRICT selectors for each site - only real product URLs
     if config.name == "trendyol":
-        # Trendyol updated selectors
+        # Önce data attribute'lardan product ID'leri bul
+        product_divs = soup.find_all('div', {'data-id': True})
+        for div in product_divs:
+            link = div.find('a', href=True)
+            if link and '-p-' in link['href']:
+                full_url = urljoin(str(config.base_url), link['href'])
+                if _is_valid_product_url(full_url, config):
+                    links.append(full_url)
+        
+        # Fallback selectors for Trendyol - sadece -p- pattern'li
         selectors = [
-            "div.p-card-wrppr a",  # Product card wrapper
-            "div.prdct-cntnr-wrppr a",  # Product container
-            "div.product-listing a.product-down",  # Product listing
-            "a[href*='/p-']",  # Links containing product pattern
+            "div.p-card-wrppr a[href*='-p-']",
+            "a[href*='trendyol.com'][href*='-p-']",
+            "div.product-item a[href*='-p-']"
         ]
     elif config.name == "gratis":
+        # Enhanced Gratis extraction for modern React/Next.js site
+        
+        # First, try to extract from structured JSON data
+        scripts = soup.find_all('script', type='application/json')
+        scripts.extend(soup.find_all('script', id='__NEXT_DATA__'))
+        
+        for script in scripts:
+            try:
+                import json
+                script_content = script.string if script.string else script.get_text()
+                if script_content:
+                    data = json.loads(script_content)
+                    # Extract product IDs from the JSON data
+                    product_ids = _extract_product_ids_from_json(data)
+                    for product_id in product_ids:
+                        product_url = f"https://www.gratis.com/p/{product_id}"
+                        if _is_valid_product_url(product_url, config):
+                            links.append(product_url)
+            except (json.JSONDecodeError, AttributeError):
+                continue
+        
+        # Enhanced selectors for Gratis - more specific to actual product links
         selectors = [
-            "a[href*='/p/']",  # General product links with /p/ pattern  
-            "div[class*='product'] a[href*='/p/']",  # Product divs with /p/ links
-            "a[href*='-p-']",  # Alternative product pattern
-            "div.product-item a",  # Generic product item links
-            "article a[href*='/p/']",  # Article-based product links
-            "li a[href*='/p/']",  # List-based product links
-            "[data-product-id] a",  # Data attribute links
-            "div[class*='card'] a[href*='/p/']"  # Card-based layouts
+            "a[href*='/p/'][href*=gratis]",  # Direct product links with gratis domain
+            "a[href^='/p/']",  # Relative product links starting with /p/
+            "a[href*='-p-'][href*=gratis]",  # Product links with -p- pattern
+            "a[href*='/p/'][href~='^https?://[^/]*gratis']",  # Absolute gratis product links
+            "[data-testid*='product'] a[href*='/p/']",  # Test ID based product links
+            ".product-card a[href*='/p/']",  # Product card links
+            ".product-item a[href*='/p/']",  # Product item links
+            "div[class*='Product'] a[href*='/p/']"  # Any div containing 'Product' with /p/ links
         ]
     elif config.name == "sephora_tr":
         selectors = [
-            "a.product-item-link",
-            "div.product-item a",
-            "a[href*='/p/']",
-            "article.product-item a"
+            "a.product-item-link[href*='/p/']",
+            "div.product-tile a[href*='/p/']",
+            "a[href*='/p/']"
         ]
     elif config.name == "rossmann":
         selectors = [
-            "div.product-item a",
-            "a.product-link",
-            "div.product-card a",
+            "a.product-item-link[href*='/p/']",
+            "div.product-item a[href*='/p/']",
             "a[href*='/p/']"
         ]
     else:
@@ -248,50 +276,119 @@ def _has_next_page(soup: BeautifulSoup, config: SiteConfig) -> bool:
 def _extract_gratis_dynamic_links(html: str, config: SiteConfig) -> List[str]:
     """
     Extract product links from Gratis dynamic content by looking for patterns in:
-    1. Preload link tags (product images)
-    2. JSON-LD data 
-    3. Script tags with product data
-    4. Image URLs with product IDs
+    1. Next.js __NEXT_DATA__ script tag with product data
+    2. Preload link tags (product images) 
+    3. Direct product links in HTML
+    4. JSON-LD structured data
     """
     import re
+    import json
     links = []
     
-    # Method 1: Extract from preload image URLs 
+    # Method 1: Extract from __NEXT_DATA__ (most reliable for Next.js sites)
+    next_data_pattern = r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>'
+    next_data_match = re.search(next_data_pattern, html, re.DOTALL)
+    
+    if next_data_match:
+        try:
+            next_data = json.loads(next_data_match.group(1))
+            # Recursively search for product IDs in the data
+            product_ids = _extract_product_ids_from_json(next_data)
+            for product_id in product_ids:
+                product_url = f"https://www.gratis.com/p/{product_id}"
+                links.append(product_url)
+            logger.debug(f"Found {len(product_ids)} product IDs in __NEXT_DATA__")
+        except json.JSONDecodeError:
+            logger.debug("Could not parse __NEXT_DATA__")
+    
+    # Method 2: Extract from preload image URLs 
     # Gratis preloads product images like: https://rio.gratis.retter.io/.../10207346-VyBUODiUKc-01_1024x1024.jpg
-    image_pattern = r'https://rio\.gratis\.retter\.io/[^/]+/CALL/Image/getImage/(\d+)-[^"]*\.jpg'
-    product_ids = re.findall(image_pattern, html)
+    image_patterns = [
+        r'https://rio\.gratis\.retter\.io/[^/]+/CALL/Image/getImage/(\d+)-[^"]*\.jpg',
+        r'https://[^/]*gratis[^/]*/[^/]*/(\d{7,})[^"]*\.(jpg|jpeg|png|webp)',
+        r'/api/image/[^/]*/(\d{7,})[^"]*'
+    ]
     
-    # Convert image product IDs to product URLs
-    for product_id in set(product_ids):  # Remove duplicates
-        product_url = f"https://www.gratis.com/p/{product_id}"
-        links.append(product_url)
+    for pattern in image_patterns:
+        product_ids = re.findall(pattern, html)
+        for match in product_ids:
+            product_id = match[0] if isinstance(match, tuple) else match
+            if product_id.isdigit() and len(product_id) >= 7:
+                product_url = f"https://www.gratis.com/p/{product_id}"
+                links.append(product_url)
     
-    # Method 2: Look for existing /p/ links in HTML even if not properly parsed
-    url_pattern = r'href=["\']([^"\']*\/p\/[^"\']*)["\']'
-    found_urls = re.findall(url_pattern, html)
+    # Method 3: Look for direct product links in HTML
+    url_patterns = [
+        r'href=["\']([^"\']*\/p\/\d+[^"\']*)["\']',
+        r'href=["\']([^"\']*-p-\d+[^"\']*)["\']',
+        r'"link":\s*"([^"]*\/p\/\d+[^"]*)"',
+        r'"url":\s*"([^"]*\/p\/\d+[^"]*)"'
+    ]
     
-    for url in found_urls:
-        if url.startswith('/'):
-            full_url = f"https://www.gratis.com{url}"
-        else:
-            full_url = url
-        if _is_valid_product_url(full_url, config):
-            links.append(full_url)
+    for pattern in url_patterns:
+        found_urls = re.findall(pattern, html)
+        for url in found_urls:
+            if url.startswith('/'):
+                full_url = f"https://www.gratis.com{url}"
+            elif not url.startswith('http'):
+                full_url = f"https://www.gratis.com/{url.lstrip('/')}"
+            else:
+                full_url = url
+            
+            if _is_valid_product_url(full_url, config):
+                links.append(full_url)
     
-    # Method 3: Extract from Next.js data or JSON-LD
-    json_pattern = r'"url"\s*:\s*"([^"]*\/p\/[^"]*)"'
-    json_urls = re.findall(json_pattern, html)
+    # Method 4: Extract product IDs from any JSON structures
+    json_patterns = [
+        r'"productId":\s*(\d+)',
+        r'"id":\s*(\d{7,})',
+        r'"sku":\s*"(\d{7,})"',
+        r'"code":\s*"(\d{7,})"'
+    ]
     
-    for url in json_urls:
-        if url.startswith('/'):
-            full_url = f"https://www.gratis.com{url}"
-        else:
-            full_url = url
-        if _is_valid_product_url(full_url, config):
-            links.append(full_url)
+    for pattern in json_patterns:
+        product_ids = re.findall(pattern, html)
+        for product_id in product_ids:
+            if product_id.isdigit() and len(product_id) >= 7:
+                product_url = f"https://www.gratis.com/p/{product_id}"
+                links.append(product_url)
     
-    logger.debug(f"Extracted {len(links)} dynamic links from Gratis")
-    return list(set(links))  # Remove duplicates
+    unique_links = list(set(links))
+    logger.debug(f"Extracted {len(unique_links)} unique dynamic links from Gratis")
+    return unique_links
+
+
+def _extract_product_ids_from_json(data: any, visited: set = None) -> List[str]:
+    """Recursively extract product IDs from JSON data structures"""
+    if visited is None:
+        visited = set()
+    
+    # Prevent infinite recursion
+    data_id = id(data)
+    if data_id in visited:
+        return []
+    visited.add(data_id)
+    
+    product_ids = []
+    
+    if isinstance(data, dict):
+        for key, value in data.items():
+            # Look for product ID fields
+            if key.lower() in ['productid', 'id', 'sku', 'code'] and isinstance(value, (str, int)):
+                str_value = str(value)
+                if str_value.isdigit() and len(str_value) >= 7:
+                    product_ids.append(str_value)
+            # Look for product arrays or objects
+            elif key.lower() in ['products', 'items', 'data']:
+                product_ids.extend(_extract_product_ids_from_json(value, visited))
+            # Recursively check other values
+            elif isinstance(value, (dict, list)):
+                product_ids.extend(_extract_product_ids_from_json(value, visited))
+    elif isinstance(data, list):
+        for item in data:
+            product_ids.extend(_extract_product_ids_from_json(item, visited))
+    
+    return product_ids
 
 
 def _is_valid_product_url(url: str, config: SiteConfig) -> bool:
