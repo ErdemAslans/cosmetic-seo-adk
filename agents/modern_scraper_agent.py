@@ -41,13 +41,15 @@ class ModernScraperAgent:
         ]
     
     def _load_user_agents(self) -> List[str]:
-        """Modern realistic user agents"""
+        """Modern realistic user agents for Turkish market"""
         return [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15"
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
         ]
     
     async def initialize_browser(self) -> None:
@@ -61,50 +63,57 @@ class ModernScraperAgent:
                 proxy = random.choice(self.proxy_list)
                 proxy_settings = {"server": proxy}
             
-            # Launch browser with maximum stealth - Production ready
+            # Launch browser with ULTRA-STEALTH - Advanced anti-detection
             self.browser = await playwright.chromium.launch(
-                headless=True,  # Production için True
+                headless=True,
                 proxy=proxy_settings,
                 args=[
                     '--disable-blink-features=AutomationControlled',
-                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-features=VizDisplayCompositor,VizHitTestSurfaceLayer',
                     '--disable-web-security',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--disable-gpu',
                     '--disable-background-timer-throttling',
                     '--disable-backgrounding-occluded-windows',
                     '--disable-renderer-backgrounding',
-                    '--disable-features=TranslateUI',
+                    '--disable-features=TranslateUI,BlinkGenPropertyTrees',
                     '--disable-ipc-flooding-protection',
-                    '--disable-component-extensions-with-background-pages',
                     '--disable-default-apps',
                     '--disable-extensions',
                     '--disable-component-update',
                     '--disable-background-networking',
                     '--disable-sync',
-                    '--metrics-recording-only',
                     '--no-default-browser-check',
                     '--mute-audio',
                     '--no-pings',
                     '--password-store=basic',
                     '--use-mock-keychain',
-                    '--disable-features=VizDisplayCompositor'
+                    '--disable-hang-monitor',
+                    '--disable-prompt-on-repost',
+                    '--disable-domain-reliability',
+                    '--disable-component-extensions-with-background-pages',
+                    '--disable-breakpad',
+                    '--disable-client-side-phishing-detection',
+                    '--disable-datasaver-prompt',
+                    '--disable-desktop-notifications',
+                    '--disable-device-discovery-notifications',
+                    '--allow-running-insecure-content',
+                    '--disable-features=AudioServiceOutOfProcess',
+                    '--disable-features=VizServiceBase',
+                    '--window-size=1920,1080'
                 ]
             )
         
-            # Create ultra-stealth context - Her sayfa için yeni context (daha güvenli)
+            # Create ultra-stealth context with realistic session persistence
             self.context = await self.browser.new_context(
-                viewport={'width': 1920, 'height': 1080},
+                viewport={'width': random.choice([1920, 1366, 1536]), 'height': random.choice([1080, 768, 864])},
                 user_agent=random.choice(self.user_agents),
                 locale='tr-TR',
                 timezone_id='Europe/Istanbul',
+                ignore_https_errors=True,  # Ignore SSL certificate errors
                 extra_http_headers={
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                     'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
                     'Accept-Encoding': 'gzip, deflate, br',
                     'DNT': '1',
@@ -113,72 +122,286 @@ class ModernScraperAgent:
                     'Sec-Fetch-Dest': 'document',
                     'Sec-Fetch-Mode': 'navigate',
                     'Sec-Fetch-Site': 'none',
-                    'Cache-Control': 'max-age=0'
+                    'Cache-Control': 'max-age=0',
+                    'sec-ch-ua': f'"Not A(Brand";v="99", "Chromium";v="121", "Google Chrome";v="121"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"'
                 }
             )
+            
+            # Add realistic cookies to simulate returning user
+            await self.context.add_cookies([
+                {
+                    'name': 'sessionId',
+                    'value': f'sess_{random.randint(100000000, 999999999)}',
+                    'domain': '.trendyol.com',
+                    'path': '/'
+                },
+                {
+                    'name': 'userPreferences',
+                    'value': 'lang=tr&currency=TRY&region=istanbul',
+                    'domain': '.trendyol.com', 
+                    'path': '/'
+                }
+            ])
         
-            # Add stealth scripts to every page
+            # Add ULTRA-STEALTH scripts - Advanced anti-detection
             await self.context.add_init_script("""
-            // Remove webdriver traces
+            // 🥷 ULTRA-STEALTH MODE - Remove ALL automation traces
+            
+            // 1. Remove webdriver property completely
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined,
+                configurable: true
             });
             
-            // Mock plugins
+            // 2. Mock realistic plugins array
             Object.defineProperty(navigator, 'plugins', {
-                get: () => [1, 2, 3, 4, 5],
+                get: () => {
+                    return Object.setPrototypeOf([
+                        {
+                            0: {type: "application/x-google-chrome-pdf", suffixes: "pdf", description: "Portable Document Format", enabledPlugin: Plugin},
+                            description: "Portable Document Format",
+                            filename: "internal-pdf-viewer",
+                            length: 1,
+                            name: "Chrome PDF Plugin"
+                        },
+                        {
+                            0: {type: "application/pdf", suffixes: "pdf", description: "Portable Document Format", enabledPlugin: Plugin},
+                            description: "Portable Document Format", 
+                            filename: "mhjfbmdgcfjbbpaeojofohoefgiehjai",
+                            length: 1,
+                            name: "Chrome PDF Viewer"
+                        }
+                    ], PluginArray.prototype);
+                },
+                configurable: true
             });
             
-            // Mock languages
+            // 3. Mock languages naturally
             Object.defineProperty(navigator, 'languages', {
                 get: () => ['tr-TR', 'tr', 'en-US', 'en'],
+                configurable: true
             });
             
-            // Mock permissions
-            const originalQuery = window.navigator.permissions.query;
-            window.navigator.permissions.query = (parameters) => (
-                parameters.name === 'notifications' ?
-                    Promise.resolve({ state: Notification.permission }) :
-                    originalQuery(parameters)
-            );
+            // 4. Mock hardware concurrency
+            Object.defineProperty(navigator, 'hardwareConcurrency', {
+                get: () => 8,
+                configurable: true
+            });
             
-            // Mock chrome runtime
-            window.chrome = {
-                runtime: {},
+            // 5. Mock device memory
+            Object.defineProperty(navigator, 'deviceMemory', {
+                get: () => 8,
+                configurable: true
+            });
+            
+            // 6. Mock connection
+            Object.defineProperty(navigator, 'connection', {
+                get: () => ({
+                    effectiveType: '4g',
+                    rtt: 100,
+                    downlink: 2.0
+                }),
+                configurable: true
+            });
+            
+            // 7. Mock permissions query
+            if (navigator.permissions && navigator.permissions.query) {
+                const originalQuery = navigator.permissions.query;
+                navigator.permissions.query = (parameters) => (
+                    parameters.name === 'notifications' ?
+                        Promise.resolve({ state: Notification.permission }) :
+                        originalQuery(parameters)
+                );
+            }
+            
+            // 8. Mock chrome runtime with realistic properties
+            if (!window.chrome) {
+                window.chrome = {
+                    runtime: {
+                        onConnect: undefined,
+                        onMessage: undefined,
+                        connect: function() { return { onDisconnect: {} }; }
+                    },
+                    app: {
+                        isInstalled: false,
+                        InstallState: {
+                            DISABLED: 'disabled',
+                            INSTALLED: 'installed',
+                            NOT_INSTALLED: 'not_installed'
+                        }
+                    }
+                };
+            }
+            
+            // 9. Override getParameter for WebGL fingerprinting
+            const getParameter = WebGLRenderingContext.getParameter;
+            WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                if (parameter === 37445) {
+                    return 'Intel Inc.';
+                }
+                if (parameter === 37446) {
+                    return 'Intel(R) Iris(TM) Graphics 6100';
+                }
+                return getParameter(parameter);
             };
             
-            // Human-like mouse movements
-            let mouseX = 0, mouseY = 0;
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
+            // 10. Mock screen properties
+            Object.defineProperty(screen, 'colorDepth', {
+                get: () => 24,
+                configurable: true
             });
+            
+            Object.defineProperty(screen, 'pixelDepth', {
+                get: () => 24,
+                configurable: true
+            });
+            
+            // 11. Human-like mouse and keyboard events
+            let mouseX = Math.floor(Math.random() * window.innerWidth);
+            let mouseY = Math.floor(Math.random() * window.innerHeight);
+            
+            // Simulate subtle mouse movements
+            setInterval(() => {
+                mouseX += Math.floor(Math.random() * 3) - 1;
+                mouseY += Math.floor(Math.random() * 3) - 1;
+                
+                document.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: mouseX,
+                    clientY: mouseY,
+                    bubbles: true
+                }));
+            }, 100 + Math.random() * 100);
+            
+            // 12. Remove automation-controlled attribute
+            delete navigator.__proto__.webdriver;
+            
+            // 13. Mock toString methods
+            const originalToString = Function.prototype.toString;
+            Function.prototype.toString = function() {
+                if (this === navigator.plugins) {
+                    return 'function plugins() { [native code] }';
+                }
+                return originalToString.call(this);
+            };
+            
+            // 14. Remove additional automation flags
+            delete navigator.__webdriver_script_func;
+            delete navigator.__webdriver_script_function;
+            delete navigator.__selenium_unwrapped;
+            delete navigator.__webdriver_unwrapped;
+            delete navigator.__driver_evaluate;
+            delete navigator.__webdriver_evaluate;
+            delete navigator.__selenium_evaluate;
+            delete navigator.__fxdriver_evaluate;
+            delete navigator.__driver_unwrapped;
+            delete navigator.__fxdriver_unwrapped;
+            delete navigator.__webdriver_script_fn;
+            
+            // 15. Override chrome runtime
+            window.chrome = {
+                runtime: {
+                    onConnect: undefined,
+                    onMessage: undefined
+                }
+            };
+            
+            // 16. Mock battery API realistically
+            if ('getBattery' in navigator) {
+                navigator.getBattery = () => Promise.resolve({
+                    charging: Math.random() > 0.5,
+                    chargingTime: Math.random() > 0.5 ? 0 : Infinity,
+                    dischargingTime: Math.random() * 28800 + 3600, // 1-8 hours
+                    level: Math.random() * 0.5 + 0.5 // 50-100%
+                });
+            }
+            
+            // 17. Enhance screen properties
+            Object.defineProperty(screen, 'availWidth', { get: () => 1920 });
+            Object.defineProperty(screen, 'availHeight', { get: () => 1040 });
+            
+            // 18. Mock realistic connection
+            Object.defineProperty(navigator, 'connection', {
+                get: () => ({
+                    effectiveType: '4g',
+                    downlink: Math.random() * 10 + 5, // 5-15 Mbps
+                    rtt: Math.random() * 100 + 50 // 50-150ms
+                })
+            });
+            
+            // 19. Intercept and modify requests to appear more natural
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                if (args[1]) {
+                    args[1].headers = {
+                        ...args[1].headers,
+                        'sec-ch-ua': '"Not A(Brand";v="99", "Chromium";v="121", "Google Chrome";v="121"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-ch-ua-platform': '"Windows"'
+                    };
+                }
+                return originalFetch.apply(this, args);
+            };
+            
+            console.log('🥷 ULTRA-STEALTH activated - All automation traces removed');
             """)
+            
+            # Add realistic request interception for better stealth
+            await self.context.route("**/*", self._intercept_requests)
             
         except Exception as e:
             logger.error(f"Browser initialization failed: {e}")
             raise e
     
-    async def discover_urls_advanced(self, site_name: str, max_products: int = 100) -> List[str]:
-        """AI-powered URL discovery with multiple strategies"""
+    async def _intercept_requests(self, route, request):
+        """Intercept and modify requests to appear more natural"""
+        try:
+            # Add natural request timing
+            await asyncio.sleep(random.uniform(0.01, 0.05))
+            
+            # Modify headers to be more realistic
+            headers = dict(request.headers)
+            headers.update({
+                'sec-ch-ua': '"Not A(Brand";v="99", "Chromium";v="121", "Google Chrome";v="121"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'empty',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-site': 'same-origin'
+            })
+            
+            await route.continue_(headers=headers)
+        except Exception as e:
+            logger.debug(f"Request interception failed: {e}")
+            await route.continue_()
+    
+    async def discover_urls_advanced(self, site_name: str, max_products: int = 100, target_category: str = None) -> List[str]:
+        """Ultra-intelligent URL discovery with category-aware filtering and deep learning"""
         site_config = next((config for config in MODERN_SITE_CONFIGS if config.name == site_name), None)
         if not site_config:
             logger.error(f"Site config not found for {site_name}")
             return []
         
+        logger.info(f"🎯 ENHANCED SCOUT AGENT: Targeting '{target_category}' category on {site_name}")
+        
+        # SMART CATEGORY PATH SELECTION - Only search relevant paths
+        relevant_paths = self._select_category_paths(site_config, target_category)
+        logger.info(f"📍 Selected {len(relevant_paths)} relevant category paths for '{target_category}'")
+        
         discovered_urls = []
         
-        # Try ALL category paths to find maximum products
-        for category_path in site_config.category_paths:
+        # Try ONLY relevant category paths for efficiency
+        for category_path in relevant_paths:
             logger.info(f"Processing category path: {category_path}")
             full_url = urljoin(str(site_config.base_url), category_path)
             logger.info(f"Full URL: {full_url}")
             
             try:
-                # Strategy 1: Classical scraping with modern selectors
-                urls = await self._classical_url_discovery(site_config, category_path)
+                # Strategy 1: Universal intelligent discovery
+                urls = await self._universal_url_discovery(site_config, category_path)
                 discovered_urls.extend(urls)
-                logger.info(f"Classical discovery found {len(urls)} URLs for {category_path}")
+                logger.info(f"Universal discovery found {len(urls)} URLs for {category_path}")
                 
                 # Debug: Log sample URLs from classical discovery
                 for i, url in enumerate(urls[:3]):
@@ -221,11 +444,383 @@ class ModernScraperAgent:
         
         logger.info(f"Validated {len(validated_urls)} URLs after filtering")
         
+        # 🎯 ULTRA-ADVANCED CATEGORY FILTERING - Multiple validation layers
+        if target_category and validated_urls:
+            logger.info(f"🎯 Applying ULTRA-ADVANCED category filtering for '{target_category}'")
+            
+            # LAYER 1: Advanced URL pattern analysis
+            pattern_filtered_urls = await self._ultra_advanced_url_pattern_filtering(
+                validated_urls, target_category, site_config
+            )
+            
+            # LAYER 2: Content-based validation (if needed)
+            if len(pattern_filtered_urls) < max(5, len(validated_urls) // 3):
+                logger.info("📄 Applying content-based validation for additional accuracy")
+                content_filtered_urls = await self._ultra_advanced_content_filtering(
+                    validated_urls, target_category, site_config
+                )
+                # Merge results, prioritizing pattern-filtered URLs
+                final_urls = list(dict.fromkeys(pattern_filtered_urls + content_filtered_urls))
+            else:
+                final_urls = pattern_filtered_urls
+            
+            logger.info(f"🏆 Category filtering result: {len(validated_urls)} → {len(final_urls)} URLs")
+            validated_urls = final_urls
+        
         # Debug: Log some validated URLs
         for i, url in enumerate(validated_urls[:3]):
-            logger.info(f"Valid URL {i+1}: {url}")
+            logger.info(f"Final Valid URL {i+1}: {url}")
         
         return validated_urls[:max_products]
+    
+    def _select_category_paths(self, site_config: SiteConfig, target_category: str) -> List[str]:
+        """Intelligently select most relevant category paths based on target category"""
+        if not target_category:
+            return site_config.category_paths
+        
+        # SMART CATEGORY MAPPING - Maps user categories to site paths
+        category_keywords = {
+            "makyaj": ["makyaj", "makeup", "cosmetics", "beauty", "ruj", "lipstick", "far", "eyeshadow", "fondöten"],
+            "cilt bakımı": ["cilt", "skin", "bakım", "care", "serum", "krem", "cream", "moisturizer", "temizleyici"],
+            "parfüm": ["parfüm", "perfume", "fragrance", "koku", "scent"],
+            "saç bakımı": ["saç", "hair", "şampuan", "shampoo", "conditioner", "mask"],
+            "vücut bakımı": ["vücut", "body", "losyon", "lotion", "scrub", "peeling"],
+            "güzellik": ["güzellik", "beauty", "cosmetic", "wellness"],
+            "kozmetik": ["kozmetik", "cosmetic", "beauty", "makeup", "skincare"]
+        }
+        
+        target_keywords = category_keywords.get(target_category.lower(), [target_category.lower()])
+        
+        # Score each path based on keyword relevance
+        path_scores = []
+        for path in site_config.category_paths:
+            score = 0
+            path_lower = path.lower()
+            
+            # Direct keyword matches get highest score
+            for keyword in target_keywords:
+                if keyword in path_lower:
+                    score += 10
+            
+            # Partial matches get medium score
+            for keyword in target_keywords:
+                if any(part in path_lower for part in keyword.split()):
+                    score += 5
+            
+            path_scores.append((path, score))
+        
+        # Sort by relevance and take top paths
+        path_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        # Take paths with score > 0, or all paths if none match
+        relevant_paths = [path for path, score in path_scores if score > 0]
+        if not relevant_paths:
+            relevant_paths = site_config.category_paths[:3]  # Fallback to first 3
+        
+        logger.info(f"🎯 Category path selection for '{target_category}':")
+        for path, score in path_scores[:5]:
+            status = "✅" if path in relevant_paths else "❌"
+            logger.info(f"   {status} {path} (score: {score})")
+        
+        return relevant_paths
+    
+    async def _ultra_advanced_url_pattern_filtering(self, urls: List[str], target_category: str, site_config: SiteConfig) -> List[str]:
+        """🌟 ULTRA ADVANCED URL pattern filtering with ML-like intelligence"""
+        if not urls or not target_category:
+            return urls
+        
+        # COMPREHENSIVE URL PATTERN ANALYSIS
+        category_url_patterns = {
+            "makyaj": {
+                "must_contain": ["makyaj", "makeup", "cosmetic", "beauty", "ruj", "lipstick", "far", "eyeshadow", "fondoten", "foundation", "maskara", "mascara"],
+                "must_not_contain": ["cilt", "skin", "care", "bakim", "serum", "krem", "cream", "temizleyici", "cleanser", "parfum", "perfume", "sac", "hair", "vucut", "body"],
+                "boost_keywords": ["lip", "eye", "face", "color", "renk", "dudak", "goz", "yuz"]
+            },
+            "cilt bakımı": {
+                "must_contain": ["cilt", "skin", "care", "bakim", "serum", "krem", "cream", "temizleyici", "cleanser", "toner", "nemlendirici", "moisturizer"],
+                "must_not_contain": ["makyaj", "makeup", "ruj", "lipstick", "far", "eyeshadow", "parfum", "perfume", "sac", "hair", "vucut", "body"],
+                "boost_keywords": ["face", "yuz", "goz", "eye", "anti", "aging", "spf", "sun"]
+            },
+            "parfüm": {
+                "must_contain": ["parfum", "perfume", "fragrance", "koku", "scent", "eau", "cologne", "deodorant"],
+                "must_not_contain": ["makyaj", "makeup", "cilt", "skin", "bakim", "care", "sac", "hair", "vucut", "body"],
+                "boost_keywords": ["spray", "mist", "women", "men", "kadin", "erkek"]
+            },
+            "saç bakımı": {
+                "must_contain": ["sac", "hair", "sampuan", "shampoo", "conditioner", "krem", "mask", "serum", "treatment"],
+                "must_not_contain": ["makyaj", "makeup", "cilt", "skin", "parfum", "perfume", "vucut", "body"],
+                "boost_keywords": ["style", "stil", "gel", "wax", "spray", "foam"]
+            },
+            "vücut bakımı": {
+                "must_contain": ["vucut", "body", "losyon", "lotion", "dus", "shower", "banyo", "bath", "el", "hand", "ayak", "foot"],
+                "must_not_contain": ["makyaj", "makeup", "cilt", "skin", "yuz", "face", "parfum", "perfume", "sac", "hair"],
+                "boost_keywords": ["butter", "oil", "yag", "scrub", "peeling"]
+            }
+        }
+        
+        target_patterns = category_url_patterns.get(target_category.lower(), {
+            "must_contain": [target_category.lower()],
+            "must_not_contain": [],
+            "boost_keywords": []
+        })
+        
+        filtered_urls = []
+        
+        for url in urls:
+            url_lower = url.lower()
+            score = 0
+            
+            # Check must-contain patterns
+            contains_required = any(pattern in url_lower for pattern in target_patterns["must_contain"])
+            if contains_required:
+                score += 100
+            
+            # Penalty for must-not-contain patterns
+            contains_forbidden = any(pattern in url_lower for pattern in target_patterns["must_not_contain"])
+            if contains_forbidden:
+                score -= 200  # Heavy penalty
+            
+            # Boost for relevant keywords
+            for boost_word in target_patterns["boost_keywords"]:
+                if boost_word in url_lower:
+                    score += 25
+            
+            # Only include URLs with positive score
+            if score > 0:
+                filtered_urls.append((url, score))
+        
+        # Sort by score and return URLs
+        filtered_urls.sort(key=lambda x: x[1], reverse=True)
+        result_urls = [url for url, score in filtered_urls]
+        
+        logger.info(f"🎯 Ultra-advanced URL filtering: {len(urls)} -> {len(result_urls)} URLs for '{target_category}'")
+        return result_urls
+    
+    async def _ultra_advanced_content_filtering(self, urls: List[str], target_category: str, site_config: SiteConfig) -> List[str]:
+        """🌟 ULTRA ADVANCED content-based filtering with AI-powered analysis"""
+        if not urls or not target_category or len(urls) < 5:
+            return urls  # Skip for small lists
+        
+        # Advanced category keyword mapping with semantic analysis
+        category_semantic_map = {
+            "makyaj": {
+                "primary_keywords": ["makyaj", "makeup", "cosmetic", "beauty", "güzellik"],
+                "product_types": ["ruj", "lipstick", "far", "eyeshadow", "fondöten", "foundation", "maskara", "mascara", "allık", "blush", "kapatıcı", "concealer", "pudra", "powder", "eyeliner", "oje", "nail"],
+                "body_parts": ["dudak", "lip", "göz", "eye", "yüz", "face", "kaş", "eyebrow", "kirpik", "eyelash"],
+                "attributes": ["mat", "matte", "parlak", "glossy", "su geçirmez", "waterproof", "uzun süre", "long lasting"],
+                "negative_indicators": ["cilt bakımı", "skincare", "serum", "nemlendirici", "moisturizer", "temizleyici", "cleanser", "parfüm", "perfume", "şampuan", "shampoo"]
+            },
+            "cilt bakımı": {
+                "primary_keywords": ["cilt", "skin", "bakım", "care", "skincare"],
+                "product_types": ["serum", "krem", "cream", "temizleyici", "cleanser", "toner", "nemlendirici", "moisturizer", "maske", "mask", "peeling", "scrub", "güneş kremi", "sunscreen"],
+                "body_parts": ["yüz", "face", "göz", "eye", "boyun", "neck", "el", "hand"],
+                "attributes": ["anti-aging", "yaşlanma karşıtı", "spf", "hassas", "sensitive", "kuru", "dry", "yağlı", "oily", "karma", "combination"],
+                "negative_indicators": ["makyaj", "makeup", "ruj", "lipstick", "far", "eyeshadow", "parfüm", "perfume", "şampuan", "shampoo"]
+            },
+            "parfüm": {
+                "primary_keywords": ["parfüm", "perfume", "fragrance", "koku", "scent"],
+                "product_types": ["eau de parfum", "eau de toilette", "cologne", "deodorant", "body spray", "mist"],
+                "body_parts": [],
+                "attributes": ["erkek", "men", "kadın", "women", "unisex", "uzun süre", "long lasting", "taze", "fresh", "oriental", "woody", "floral"],
+                "negative_indicators": ["makyaj", "makeup", "cilt bakımı", "skincare", "şampuan", "shampoo", "vücut losyonu", "body lotion"]
+            },
+            "saç bakımı": {
+                "primary_keywords": ["saç", "hair", "saç bakımı", "hair care"],
+                "product_types": ["şampuan", "shampoo", "saç kremi", "conditioner", "maske", "mask", "serum", "yağ", "oil", "köpük", "foam", "sprey", "spray", "jel", "gel", "wax", "mum"],
+                "body_parts": ["saç", "hair", "saç derisi", "scalp"],
+                "attributes": ["besleyici", "nourishing", "onarıcı", "repairing", "hacim", "volume", "parlaklık", "shine", "kuru", "dry", "yağlı", "oily", "boyalı", "colored"],
+                "negative_indicators": ["makyaj", "makeup", "cilt bakımı", "skincare", "parfüm", "perfume", "vücut", "body"]
+            },
+            "vücut bakımı": {
+                "primary_keywords": ["vücut", "body", "vücut bakımı", "body care"],
+                "product_types": ["losyon", "lotion", "krem", "cream", "duş jeli", "shower gel", "banyo", "bath", "scrub", "peeling", "yağ", "oil", "butter"],
+                "body_parts": ["vücut", "body", "el", "hand", "ayak", "foot", "bacak", "leg", "kol", "arm"],
+                "attributes": ["nemlendirici", "moisturizing", "besleyici", "nourishing", "yumuşatıcı", "softening", "kuru cilt", "dry skin"],
+                "negative_indicators": ["makyaj", "makeup", "yüz", "face", "cilt bakımı", "facial", "parfüm", "perfume", "saç", "hair"]
+            }
+        }
+        
+        target_semantic = category_semantic_map.get(target_category.lower(), {
+            "primary_keywords": [target_category.lower()],
+            "product_types": [],
+            "body_parts": [],
+            "attributes": [],
+            "negative_indicators": []
+        })
+        
+        validated_urls = []
+        sample_urls = urls[:15]  # Sample for content analysis
+        
+        logger.info(f"🧠 Ultra-advanced content filtering for '{target_category}' - analyzing {len(sample_urls)} URLs...")
+        
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage'])
+            context = await browser.new_context(user_agent=random.choice(self.user_agents))
+            
+            for i, url in enumerate(sample_urls):
+                try:
+                    page = await context.new_page()
+                    await page.goto(url, wait_until='domcontentloaded', timeout=15000)
+                    await asyncio.sleep(random.uniform(0.5, 1.0))
+                    
+                    # Extract all text content for analysis
+                    content_text = await page.evaluate("""
+                        () => {
+                            const title = document.title || '';
+                            const metaDesc = document.querySelector('meta[name="description"]')?.content || '';
+                            const h1 = document.querySelector('h1')?.textContent || '';
+                            const productName = document.querySelector('.product-name, [data-testid="product-name"], .pr-new-br')?.textContent || '';
+                            const productDesc = document.querySelector('.product-description, .detail-desc-item, .product-detail-description')?.textContent || '';
+                            const breadcrumb = document.querySelector('.breadcrumb, .breadcrumb-nav, .navigation-path')?.textContent || '';
+                            
+                            return (title + ' ' + metaDesc + ' ' + h1 + ' ' + productName + ' ' + productDesc + ' ' + breadcrumb).toLowerCase();
+                        }
+                    """)
+                    
+                    await page.close()
+                    
+                    # Advanced semantic scoring
+                    score = 0
+                    content_lower = content_text.lower()
+                    
+                    # Primary keywords (highest weight)
+                    primary_matches = sum(10 for keyword in target_semantic["primary_keywords"] if keyword in content_lower)
+                    score += primary_matches
+                    
+                    # Product type matches (high weight)
+                    product_matches = sum(8 for product_type in target_semantic["product_types"] if product_type in content_lower)
+                    score += product_matches
+                    
+                    # Body part matches (medium weight)
+                    body_part_matches = sum(5 for body_part in target_semantic["body_parts"] if body_part in content_lower)
+                    score += body_part_matches
+                    
+                    # Attribute matches (medium weight)
+                    attribute_matches = sum(3 for attribute in target_semantic["attributes"] if attribute in content_lower)
+                    score += attribute_matches
+                    
+                    # Negative indicators (heavy penalty)
+                    negative_matches = sum(15 for negative in target_semantic["negative_indicators"] if negative in content_lower)
+                    score -= negative_matches
+                    
+                    # URL pattern bonus
+                    url_lower = url.lower()
+                    if any(keyword in url_lower for keyword in target_semantic["primary_keywords"]):
+                        score += 5
+                    
+                    logger.info(f"   URL {i+1}: Score {score} - {url[:80]}...")
+                    
+                    if score > 10:  # Threshold for acceptance
+                        validated_urls.append((url, score))
+                    
+                except Exception as e:
+                    logger.warning(f"Content analysis failed for {url}: {e}")
+                    # Include URL with neutral score if analysis fails
+                    validated_urls.append((url, 5))
+            
+            await browser.close()
+        
+        # Sort by score and add remaining URLs with lower priority
+        validated_urls.sort(key=lambda x: x[1], reverse=True)
+        final_urls = [url for url, score in validated_urls]
+        
+        # Add remaining URLs that weren't analyzed
+        remaining_urls = [url for url in urls if url not in final_urls]
+        final_urls.extend(remaining_urls)
+        
+        logger.info(f"🎯 Content filtering complete: {len(final_urls)} URLs validated for '{target_category}'")
+        return final_urls
+    
+    async def _validate_category_content(self, urls: List[str], target_category: str, site_config: SiteConfig) -> List[str]:
+        """Validate URLs by checking product content matches target category"""
+        if not urls or not target_category:
+            return urls
+        
+        # Category keywords for content matching
+        category_keywords = {
+            "makyaj": [
+                "makyaj", "makeup", "ruj", "lipstick", "far", "eyeshadow", "fondöten", "foundation", 
+                "maskara", "mascara", "allık", "blush", "kapatıcı", "concealer", "pudra", "powder",
+                "eyeliner", "göz", "eye", "dudak", "lip", "kaş", "eyebrow", "oje", "nail"
+            ],
+            "cilt bakımı": [
+                "cilt", "skin", "bakım", "care", "serum", "krem", "cream", "temizleyici", "cleanser",
+                "toner", "nemlendirici", "moisturizer", "güneş", "sun", "spf", "anti-aging",
+                "yüz", "face", "göz kremi", "eye cream", "maske", "mask", "peeling", "scrub"
+            ],
+            "parfüm": [
+                "parfüm", "perfume", "fragrance", "koku", "scent", "eau de", "cologne", "deodorant",
+                "body spray", "mist", "attar", "essential oil"
+            ],
+            "saç bakımı": [
+                "saç", "hair", "şampuan", "shampoo", "saç kremi", "conditioner", "maske", "mask",
+                "serum", "yağ", "oil", "bakım", "treatment", "stil", "styling", "köpük", "foam",
+                "sprey", "spray", "jel", "gel", "wax", "mum"
+            ],
+            "vücut bakımı": [
+                "vücut", "body", "losyon", "lotion", "krem", "cream", "duş", "shower", "banyo", "bath",
+                "scrub", "peeling", "yağ", "oil", "butter", "tereyağı", "el", "hand", "ayak", "foot"
+            ]
+        }
+        
+        target_keywords = category_keywords.get(target_category.lower(), [target_category.lower()])
+        logger.info(f"Validating URLs against keywords: {target_keywords[:5]}...")
+        
+        validated_urls = []
+        sample_size = min(len(urls), 20)  # Sample first 20 URLs for performance
+        
+        for i, url in enumerate(urls[:sample_size]):
+            try:
+                # Quick validation - check URL structure first
+                url_contains_category = any(keyword in url.lower() for keyword in target_keywords)
+                if url_contains_category:
+                    validated_urls.append(url)
+                    continue
+                
+                # For non-matching URLs, do a quick content check
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                        if response.status == 200:
+                            html = await response.text()
+                            soup = BeautifulSoup(html, 'html.parser')
+                            
+                            # Check page title, product name, and category breadcrumbs
+                            title = soup.find('title')
+                            title_text = title.get_text(strip=True).lower() if title else ""
+                            
+                            # Look for product name and category info
+                            product_info = ""
+                            for selector in ['h1', '.product-name', '.breadcrumb', '.category']:
+                                elements = soup.select(selector)
+                                for elem in elements:
+                                    product_info += elem.get_text(strip=True).lower() + " "
+                            
+                            combined_text = (title_text + " " + product_info).lower()
+                            
+                            # Check if any category keywords appear in content
+                            if any(keyword in combined_text for keyword in target_keywords):
+                                validated_urls.append(url)
+                                logger.debug(f"✅ URL {i+1} validated by content: {url[:50]}...")
+                            else:
+                                logger.debug(f"❌ URL {i+1} rejected by content: {url[:50]}...")
+                        
+            except Exception as e:
+                logger.debug(f"Content validation error for {url}: {e}")
+                # On error, include URL if it passes URL-based validation
+                if any(keyword in url.lower() for keyword in target_keywords):
+                    validated_urls.append(url)
+            
+            # Rate limiting
+            await asyncio.sleep(0.5)
+        
+        # Add remaining URLs without validation if we have too few
+        if len(validated_urls) < max(5, len(urls) // 4):
+            remaining_urls = urls[sample_size:]
+            validated_urls.extend(remaining_urls[:10])
+            logger.info(f"Added {len(remaining_urls[:10])} remaining URLs without validation")
+        
+        logger.info(f"Category content validation: {len(urls)} → {len(validated_urls)} URLs")
+        return validated_urls
     
     async def _classical_url_discovery(self, config: SiteConfig, category_path: str) -> List[str]:
         """Enhanced classical scraping with adaptive selectors"""
@@ -314,6 +909,612 @@ class ModernScraperAgent:
             await page.close()
         
         return list(set(urls))  # Remove duplicates
+    
+    async def _universal_url_discovery(self, config: SiteConfig, category_path: str) -> List[str]:
+        """Universal intelligent URL discovery for any e-commerce site"""
+        page = await self.context.new_page()
+        all_urls = set()
+        
+        try:
+            full_url = urljoin(str(config.base_url), category_path)
+            logger.info(f"🌐 Universal discovery navigating to: {full_url}")
+            
+            # Navigate with human-like behavior
+            await self._human_like_navigation(page, full_url)
+            await page.wait_for_load_state('networkidle', timeout=30000)
+            await asyncio.sleep(random.uniform(3, 6))
+            
+            page_title = await page.title()
+            logger.info(f"📄 Page loaded: {page_title}")
+            
+            # PHASE 1: INTELLIGENT PATTERN DISCOVERY
+            discovered_patterns = await self._discover_universal_product_patterns(page)
+            logger.info(f"🧠 Discovered {len(discovered_patterns)} universal patterns")
+            
+            for pattern in discovered_patterns:
+                try:
+                    elements = await page.query_selector_all(pattern)
+                    logger.info(f"  🔍 Pattern '{pattern}': {len(elements)} elements")
+                    
+                    for element in elements[:50]:  # Limit to prevent overload
+                        href = await self._extract_product_url(element, str(config.base_url))
+                        if href and self._is_universal_product_url(href):
+                            all_urls.add(href)
+                except Exception as e:
+                    logger.debug(f"Pattern '{pattern}' failed: {e}")
+                    continue
+            
+            logger.info(f"✅ Phase 1 found: {len(all_urls)} URLs")
+            
+            # PHASE 2: DYNAMIC CONTENT LOADING
+            await self._universal_dynamic_loading(page)
+            
+            # Re-scan top patterns after dynamic loading
+            for pattern in discovered_patterns[:3]:
+                try:
+                    elements = await page.query_selector_all(pattern)
+                    for element in elements:
+                        href = await self._extract_product_url(element, str(config.base_url))
+                        if href and self._is_universal_product_url(href):
+                            all_urls.add(href)
+                except:
+                    continue
+            
+            logger.info(f"✅ Phase 2 (dynamic) found: {len(all_urls)} URLs")
+            
+            # PHASE 3: FALLBACK TO SITE-SPECIFIC SELECTORS (ALWAYS RUN IF NO URLS)
+            if len(all_urls) == 0:
+                logger.info("🔄 PHASE 3: Using site-specific selectors (fallback)")
+                
+                selectors = self._get_adaptive_selectors(config.name)
+                for selector_group in selectors:
+                    try:
+                        elements = await page.query_selector_all(selector_group['product_link'])
+                        logger.info(f"  🎯 Site selector '{selector_group['name']}': {len(elements)} elements")
+                        
+                        for element in elements:
+                            href = await self._extract_product_url(element, str(config.base_url))
+                            if href and self._is_universal_product_url(href):
+                                all_urls.add(href)
+                    except:
+                        continue
+            
+            # PHASE 4: BRUTE FORCE (LAST RESORT)
+            if len(all_urls) == 0:
+                logger.info("🔄 PHASE 4: Brute force link extraction (last resort)")
+                try:
+                    # Get ALL links and filter by URL pattern
+                    all_links = await page.query_selector_all('a[href]')
+                    logger.info(f"  🔗 Found {len(all_links)} total links")
+                    
+                    for link in all_links:
+                        href = await self._extract_product_url(link, str(config.base_url))
+                        if href and self._is_universal_product_url(href):
+                            all_urls.add(href)
+                            
+                    logger.info(f"  🎯 Brute force found: {len(all_urls)} product URLs")
+                except Exception as e:
+                    logger.error(f"Brute force failed: {e}")
+            
+            logger.info(f"🎯 Universal discovery total: {len(all_urls)} URLs")
+            return list(all_urls)[:100]  # Limit results
+            
+        except Exception as e:
+            logger.error(f"Universal discovery failed: {e}")
+            return []
+        finally:
+            await page.close()
+    
+    async def _discover_universal_product_patterns(self, page: Page) -> List[str]:
+        """Advanced universal product pattern discovery for modern SPA sites"""
+        patterns = []
+        
+        try:
+            # Wait for content to potentially load
+            await asyncio.sleep(3)
+            
+            # Get all elements for deep analysis
+            all_elements = await page.query_selector_all('*')
+            logger.info(f"🔍 Deep analysis of {len(all_elements)} DOM elements")
+            
+            # 1. ADVANCED LINK ANALYSIS WITH DEEPER INSPECTION
+            all_links = await page.query_selector_all('a[href]')
+            logger.info(f"🔗 Analyzing {len(all_links)} links")
+            
+            if len(all_links) < 20:  # Too few links - likely SPA not loaded
+                logger.warning("⚠️ Very few links detected - implementing SPA content detection")
+                await self._force_spa_content_loading(page)
+                all_links = await page.query_selector_all('a[href]')
+                logger.info(f"🔄 After SPA loading: {len(all_links)} links")
+            
+            # Enhanced link pattern analysis
+            link_patterns = {}
+            for link in all_links:
+                try:
+                    href = await link.get_attribute('href')
+                    if not href or len(href) < 5:
+                        continue
+                    
+                    # Get comprehensive element info safely
+                    try:
+                        element_info = await link.evaluate("""
+                            el => ({
+                                href: el.href,
+                                className: el.className,
+                                id: el.id,
+                                tagName: el.tagName,
+                                parentClass: el.parentElement?.className || '',
+                                grandParentClass: el.parentElement?.parentElement?.className || '',
+                                text: el.textContent?.trim() || '',
+                                hasImages: el.querySelector('img') ? true : false
+                            })
+                        """)
+                    except:
+                        # Fallback to basic info
+                        element_info = {
+                            'href': href,
+                            'className': await link.get_attribute('class') or '',
+                            'text': await link.inner_text() or '',
+                            'parentClass': '',
+                            'grandParentClass': '',
+                            'hasImages': False
+                        }
+                    
+                    # Check if this looks like a product link
+                    if self._analyze_link_for_product_indicators(element_info):
+                        # Create multiple pattern candidates
+                        if element_info['className']:
+                            patterns.append(f"a.{element_info['className'].split()[0]}")
+                        if element_info['parentClass']:
+                            patterns.append(f".{element_info['parentClass'].split()[0]} a")
+                        if element_info['grandParentClass']:
+                            patterns.append(f".{element_info['grandParentClass'].split()[0]} a")
+                        
+                except Exception as e:
+                    continue
+            
+            # 2. SMART CONTAINER DETECTION
+            container_candidates = await page.evaluate("""
+                () => {
+                    const containers = [];
+                    const elements = document.querySelectorAll('*');
+                    
+                    elements.forEach(el => {
+                        const children = el.children;
+                        if (children.length >= 6 && children.length <= 50) {  // Likely product grid
+                            const className = el.className;
+                            const hasLinks = el.querySelectorAll('a').length > children.length / 2;
+                            const hasImages = el.querySelectorAll('img').length > 0;
+                            
+                            if (hasLinks && hasImages && className) {
+                                containers.push({
+                                    selector: '.' + className.split(' ')[0],
+                                    childCount: children.length,
+                                    linkCount: el.querySelectorAll('a').length
+                                });
+                            }
+                        }
+                    });
+                    
+                    return containers.slice(0, 10);  // Top 10 candidates
+                }
+            """)
+            
+            for container in container_candidates:
+                patterns.append(f"{container['selector']} a")
+                logger.info(f"📦 Smart container: {container['selector']} ({container['childCount']} items)")
+            
+            # 3. AGGRESSIVE FALLBACK PATTERNS FOR SPA SITES
+            aggressive_patterns = [
+                # Modern CSS selector patterns
+                '[class*="product"] a', '[class*="item"] a', '[class*="card"] a',
+                '[class*="tile"] a', '[class*="listing"] a', '[class*="grid"] a',
+                
+                # Data attribute patterns
+                '[data-testid] a', '[data-cy] a', '[data-qa] a', '[data-track] a',
+                
+                # React/Vue component patterns
+                '[class*="Product"] a', '[class*="Item"] a', '[class*="Card"] a',
+                
+                # Generic but effective patterns
+                'div[class] > a', 'li > a', 'article > a',
+                'div[class*="list"] a', 'div[class*="grid"] a',
+                
+                # URL-based patterns (most reliable)
+                'a[href*="/p/"]', 'a[href*="/product/"]', 'a[href*="/item/"]',
+                'a[href*="-p-"]', 'a[href*="/prd/"]', 'a[href*="/dp/"]'
+            ]
+            
+            for pattern in aggressive_patterns:
+                try:
+                    elements = await page.query_selector_all(pattern)
+                    if len(elements) > 0:
+                        patterns.append(pattern)
+                        if len(elements) >= 5:  # High-value pattern
+                            logger.info(f"🎯 High-value pattern: {pattern} ({len(elements)} elements)")
+                except:
+                    continue
+            
+            # 4. LAST RESORT: IMAGE-BASED DETECTION
+            if len(patterns) < 3:
+                logger.warning("🚨 Few patterns found - using image-based detection")
+                image_patterns = await page.evaluate("""
+                    () => {
+                        const patterns = [];
+                        const images = document.querySelectorAll('img');
+                        
+                        images.forEach(img => {
+                            const link = img.closest('a');
+                            if (link && link.href) {
+                                const parent = link.parentElement;
+                                if (parent && parent.className) {
+                                    patterns.push('.' + parent.className.split(' ')[0] + ' a');
+                                }
+                            }
+                        });
+                        
+                        return [...new Set(patterns)].slice(0, 5);
+                    }
+                """)
+                
+                patterns.extend(image_patterns)
+                logger.info(f"🖼️ Image-based patterns: {len(image_patterns)} found")
+            
+            # Remove duplicates and return top patterns
+            unique_patterns = list(dict.fromkeys(patterns))  # Preserve order
+            logger.info(f"✅ Total unique patterns discovered: {len(unique_patterns)}")
+            
+            return unique_patterns[:15]  # Return top 15 patterns
+            
+        except Exception as e:
+            logger.error(f"Advanced pattern discovery failed: {e}")
+            return []
+    
+    def _analyze_link_for_product_indicators(self, element_info: dict) -> bool:
+        """Analyze if a link element looks like a product link"""
+        try:
+            href = element_info.get('href', '').lower()
+            text = element_info.get('text', '').lower()
+            class_name = element_info.get('className', '').lower()
+            
+            # Strong product indicators
+            product_indicators = [
+                '/p/', '/product/', '/item/', '/detail/', '/prd/', '/dp/',
+                '-p-', '_p_', '/goods/', '/article/',
+                # Trendyol specific patterns
+                '/p-', '-p-', 'trendyol.com/', '/brand/', '/marka/'
+            ]
+            
+            for indicator in product_indicators:
+                if indicator in href:
+                    return True
+            
+            # Class-based indicators
+            class_indicators = ['product', 'item', 'card', 'tile']
+            for indicator in class_indicators:
+                if indicator in class_name:
+                    return True
+            
+            # Text-based indicators (for e-commerce)
+            if len(text) > 5 and any(word in text for word in ['₺', '$', '€', 'buy', 'price', 'add']):
+                return True
+            
+            # Has images (common in product listings)
+            if element_info.get('hasImages', False) and len(href) > 10:
+                return True
+            
+            return False
+            
+        except:
+            return False
+    
+    async def _force_spa_content_loading(self, page: Page):
+        """Force SPA content loading using aggressive techniques"""
+        try:
+            logger.info("🚀 FORCING SPA CONTENT LOADING...")
+            
+            # 1. Trigger all possible loading events
+            await page.evaluate("""
+                // Force trigger all events that might load content
+                ['scroll', 'resize', 'load', 'DOMContentLoaded', 'click', 'mouseover', 'focus'].forEach(event => {
+                    window.dispatchEvent(new Event(event));
+                    document.dispatchEvent(new Event(event));
+                });
+                
+                // Force intersection observer triggers
+                if (window.IntersectionObserver) {
+                    const observer = new IntersectionObserver(() => {});
+                    document.querySelectorAll('*').forEach(el => observer.observe(el));
+                }
+                
+                // Force mutation observer activity
+                if (window.MutationObserver) {
+                    const observer = new MutationObserver(() => {});
+                    observer.observe(document.body, { childList: true, subtree: true });
+                }
+            """)
+            
+            # 2. Aggressive scrolling
+            for i in range(3):
+                await page.evaluate(f'window.scrollTo(0, {i * 500})')
+                await asyncio.sleep(1)
+            
+            # 3. Click on potential loading triggers
+            potential_triggers = ['button', '.load', '.more', '.show', '[role="button"]']
+            for trigger in potential_triggers:
+                try:
+                    elements = await page.query_selector_all(trigger)
+                    for element in elements[:2]:  # Try first 2
+                        try:
+                            await element.click(timeout=1000)
+                            await asyncio.sleep(1)
+                        except:
+                            continue
+                except:
+                    continue
+            
+            # 4. Wait for potential API calls
+            await asyncio.sleep(5)
+            
+        except Exception as e:
+            logger.debug(f"Force SPA loading failed: {e}")
+    
+    async def _extract_product_url(self, element, base_url: str) -> str:
+        """Extract and normalize product URL from element"""
+        try:
+            href = await element.get_attribute('href')
+            if not href:
+                return None
+            
+            # Make absolute URL
+            if href.startswith('/'):
+                href = urljoin(base_url, href)
+            elif href.startswith('#') or href.startswith('javascript:'):
+                return None
+            elif not href.startswith('http'):
+                href = urljoin(base_url, href)
+            
+            return href
+            
+        except Exception:
+            return None
+    
+    def _is_universal_product_url(self, url: str) -> bool:
+        """Universal product URL validation for any e-commerce site"""
+        if not url or len(url) < 10:
+            return False
+        
+        url_lower = url.lower()
+        
+        # Exclude obviously non-product URLs  
+        exclude_patterns = [
+            '/category/', '/cat/', '/c/', '/search/', '/filter/', '/brand/',
+            '/about', '/contact', '/help', '/faq', '/terms',
+            '/privacy', '/login', '/register', '/account',
+            '.pdf', '.jpg', '.png', '.gif', '.css', '.js',
+            'mailto:', 'tel:', 'javascript:', '#',
+            # Trendyol specific excludes (to avoid category pages)
+            '/kozmetik-x-c', '/makyaj-x-c', '/butik/liste', '/sr?'
+        ]
+        
+        for pattern in exclude_patterns:
+            if pattern in url_lower:
+                return False
+        
+        # Look for product indicators
+        product_indicators = [
+            '/p/', '/product/', '/item/', '/detail/', '/goods/',
+            '-p-', '_p_', '/prd/', '/article/', '/dp/', '/pd/'
+        ]
+        
+        for indicator in product_indicators:
+            if indicator in url_lower:
+                return True
+                
+        # Trendyol specific product URL pattern: /brand/product-name-p-12345
+        import re
+        if 'trendyol.com' in url_lower:
+            # Trendyol pattern: /brand/product-name-p-12345
+            if re.search(r'/[^/]+-p-\d+', url_lower):
+                return True
+            # Alternative: /product-name-p-12345
+            if re.search(r'/\w+-p-\d+$', url_lower):
+                return True
+        
+        # Check for product-like patterns (numbers, hyphens)
+        if re.search(r'/[a-z]+-[a-z]+-\d+', url_lower) or re.search(r'/\w+/\d+', url_lower):
+            return True
+        
+        return False
+    
+    async def _universal_dynamic_loading(self, page: Page):
+        """Advanced SPA content loading for modern e-commerce sites"""
+        try:
+            logger.info("🧠 INTELLIGENT SPA LOADING - Detecting content patterns...")
+            
+            # 1. WAIT FOR JAVASCRIPT FRAMEWORKS TO INITIALIZE
+            await self._wait_for_spa_initialization(page)
+            
+            # 2. INTERCEPT AND MONITOR API CALLS
+            api_calls_detected = await self._monitor_api_calls(page)
+            logger.info(f"📡 Detected {len(api_calls_detected)} API calls")
+            
+            # 3. INTELLIGENT CONTENT LOADING
+            content_loaded = await self._trigger_intelligent_loading(page)
+            
+            # 4. WAIT FOR ACTUAL CONTENT TO APPEAR
+            await self._wait_for_content_appearance(page)
+            
+            # 5. FINAL CONTENT STABILIZATION
+            logger.info("⏳ Waiting for content stabilization...")
+            await asyncio.sleep(5)  # Extended wait for all content
+            
+        except Exception as e:
+            logger.debug(f"Advanced dynamic loading failed: {e}")
+    
+    async def _wait_for_spa_initialization(self, page: Page):
+        """Wait for SPA frameworks (React, Vue, Angular) to initialize"""
+        try:
+            logger.info("🚀 Waiting for SPA framework initialization...")
+            
+            # Check for common SPA frameworks
+            spa_checks = [
+                "typeof React !== 'undefined'",
+                "typeof Vue !== 'undefined'", 
+                "typeof angular !== 'undefined'",
+                "window.__NEXT_DATA__",
+                "window.__NUXT__",
+                "document.querySelector('[data-reactroot]')",
+                "document.querySelector('[data-server-rendered]')"
+            ]
+            
+            for i in range(10):  # Wait up to 10 seconds
+                for check in spa_checks:
+                    try:
+                        result = await page.evaluate(check)
+                        if result:
+                            logger.info(f"✅ SPA framework detected: {check}")
+                            await asyncio.sleep(2)  # Extra time for initialization
+                            return
+                    except:
+                        continue
+                
+                await asyncio.sleep(1)
+            
+            logger.info("📱 No specific SPA framework detected, continuing with universal approach")
+            
+        except Exception as e:
+            logger.debug(f"SPA initialization check failed: {e}")
+    
+    async def _monitor_api_calls(self, page: Page) -> List[str]:
+        """Monitor and wait for API calls that load product data"""
+        api_calls = []
+        
+        try:
+            # Set up network request interception
+            async def handle_request(request):
+                url = request.url
+                if any(keyword in url.lower() for keyword in [
+                    'api', 'ajax', 'json', 'product', 'search', 'listing', 
+                    'catalog', 'items', 'data', 'feed'
+                ]):
+                    api_calls.append(url)
+                    logger.info(f"📡 API call detected: {url}")
+            
+            page.on('request', handle_request)
+            
+            # Trigger potential API calls
+            await page.mouse.wheel(0, 100)  # Small scroll to trigger lazy loading
+            await asyncio.sleep(3)
+            
+            # Remove listener
+            page.remove_listener('request', handle_request)
+            
+        except Exception as e:
+            logger.debug(f"API monitoring failed: {e}")
+        
+        return api_calls
+    
+    async def _trigger_intelligent_loading(self, page: Page) -> bool:
+        """Intelligently trigger content loading using multiple strategies"""
+        content_loaded = False
+        
+        try:
+            # Strategy 1: Progressive scrolling with content detection
+            logger.info("📜 Strategy 1: Progressive scrolling")
+            initial_links = len(await page.query_selector_all('a[href]'))
+            
+            for scroll_step in range(5):
+                # Scroll down gradually
+                await page.evaluate(f'window.scrollTo(0, {(scroll_step + 1) * 300})')
+                await asyncio.sleep(2)
+                
+                # Check if new content appeared
+                current_links = len(await page.query_selector_all('a[href]'))
+                if current_links > initial_links + 5:
+                    logger.info(f"✅ New content detected: {current_links - initial_links} new links")
+                    content_loaded = True
+                    initial_links = current_links
+            
+            # Strategy 2: Hover over common loading trigger areas
+            logger.info("🎯 Strategy 2: Hover triggers")
+            hover_selectors = [
+                '.container', '.content', '.main', '.products', 
+                '.listing', '.grid', '.items', '#content', '#main'
+            ]
+            
+            for selector in hover_selectors:
+                try:
+                    element = await page.query_selector(selector)
+                    if element:
+                        await element.hover()
+                        await asyncio.sleep(1)
+                except:
+                    continue
+            
+            # Strategy 3: JavaScript-based content loading
+            logger.info("⚡ Strategy 3: JavaScript loading triggers")
+            await page.evaluate("""
+                // Trigger common loading events
+                window.dispatchEvent(new Event('scroll'));
+                window.dispatchEvent(new Event('resize'));
+                
+                // Try to trigger intersection observers
+                const observer = new IntersectionObserver(() => {});
+                document.querySelectorAll('*').forEach(el => {
+                    observer.observe(el);
+                });
+                
+                // Simulate user interaction
+                document.dispatchEvent(new Event('mousemove'));
+                document.dispatchEvent(new Event('click'));
+            """)
+            
+            await asyncio.sleep(3)
+            
+            # Strategy 4: Network idle waiting with timeout
+            logger.info("🌐 Strategy 4: Network idle detection")
+            try:
+                await page.wait_for_load_state('networkidle', timeout=15000)
+                content_loaded = True
+            except:
+                logger.debug("Network idle timeout reached")
+            
+        except Exception as e:
+            logger.debug(f"Intelligent loading failed: {e}")
+        
+        return content_loaded
+    
+    async def _wait_for_content_appearance(self, page: Page):
+        """Wait for actual product content to appear using smart detection"""
+        try:
+            logger.info("👀 Waiting for content to appear...")
+            
+            # Product content indicators
+            content_indicators = [
+                'a[href*="/p/"]', 'a[href*="/product/"]', 'a[href*="/item/"]',
+                '[class*="product"]', '[class*="item"]', '[data-testid*="product"]',
+                '.price', '.add-to-cart', '.buy-now', '[class*="price"]'
+            ]
+            
+            for attempt in range(10):  # Wait up to 10 seconds
+                for indicator in content_indicators:
+                    try:
+                        elements = await page.query_selector_all(indicator)
+                        if len(elements) >= 3:  # Found multiple product elements
+                            logger.info(f"✅ Content appeared: {len(elements)} {indicator} elements")
+                            return True
+                    except:
+                        continue
+                
+                await asyncio.sleep(1)
+            
+            logger.info("⏳ Content appearance timeout - proceeding anyway")
+            return False
+            
+        except Exception as e:
+            logger.debug(f"Content appearance detection failed: {e}")
+            return False
     
     async def _ai_pattern_discovery(self, config: SiteConfig, category_path: str) -> List[str]:
         """AI-powered pattern recognition for URL discovery"""
@@ -450,52 +1651,283 @@ class ModernScraperAgent:
         )
     
     async def _human_like_navigation(self, page: Page, url: str) -> None:
-        """Navigate like a human with realistic delays and behavior"""
-        # Random delay before navigation
-        await asyncio.sleep(random.uniform(2, 5))
+        """🥷 ULTRA-REALISTIC human navigation with advanced anti-detection"""
+        # 1. Human-like pre-navigation delay
+        await asyncio.sleep(random.uniform(3, 8))
         
         try:
-            # Navigate to page
-            await page.goto(url, wait_until='domcontentloaded', timeout=30000)
+            # 2. Navigate with realistic loading behavior
+            await page.goto(url, wait_until='domcontentloaded', timeout=60000)
             
-            # Check for anti-bot measures
+            # 3. Immediate human-like actions after page load
+            await asyncio.sleep(random.uniform(1, 3))
+            
+            # 4. Check for real anti-bot measures (much more selective)
             content = await page.content()
-            if any(keyword in content.lower() for keyword in ['blocked', 'robot', 'captcha', 'cloudflare']):
-                logger.warning(f"Potential bot detection on {url}")
-                # Wait longer if blocked
-                await asyncio.sleep(random.uniform(10, 15))
+            title = await page.title()
             
-            # Rastgele mouse hareketleri
-            for _ in range(random.randint(2, 4)):
-                await page.mouse.move(
-                    random.randint(100, 800),
-                    random.randint(100, 600),
-                    steps=random.randint(10, 20)
-                )
-                await asyncio.sleep(random.uniform(0.1, 0.3))
+            # Only trigger on REAL blocking indicators
+            real_block_indicators = [
+                'you have been blocked', 
+                'access denied',
+                'please complete the security check',
+                'enable javascript and cookies',
+                'cloudflare bot detection',
+                'suspicious activity detected'
+            ]
             
-            # Rastgele scroll
-            await page.evaluate("""
-                () => {
-                    const scrollHeight = Math.random() * 300 + 100;
-                    window.scrollBy({
-                        top: scrollHeight,
-                        left: 0,
-                        behavior: 'smooth'
-                    });
-                }
-            """)
+            # Check if this is actually a blocking page
+            is_really_blocked = any(indicator in content.lower() for indicator in real_block_indicators)
+            is_empty_or_error = len(content) < 3000 and ('error' in title.lower() or 'blocked' in title.lower())
             
-            # Rastgele bekleme
-            await asyncio.sleep(random.uniform(2, 5))
+            if is_really_blocked or is_empty_or_error:
+                logger.warning(f"Real bot detection on {url}")
+                await self._execute_bot_evasion_sequence(page)
+                await asyncio.sleep(random.uniform(15, 25))
+            else:
+                # Page loaded successfully
+                logger.info(f"✅ Page loaded successfully: {title} ({len(content)} chars)")
             
-            # Wait for page to fully load
-            await page.wait_for_load_state('networkidle', timeout=30000)
+            # 5. Natural human reading behavior simulation
+            await self._simulate_reading_behavior(page)
+            
+            # 6. Realistic mouse movements (more human-like)
+            await self._perform_natural_mouse_movements(page)
+            
+            # 7. Simulate scrolling behavior like human
+            await self._human_scroll_pattern(page)
+            
+            # 8. Random tab interactions (very human)
+            if random.random() < 0.3:  # 30% chance
+                await page.keyboard.press('Tab')
+                await asyncio.sleep(random.uniform(0.5, 1.5))
+            
+            # 9. Wait for full page stabilization with longer timeout
+            await page.wait_for_load_state('networkidle', timeout=60000)
+            
+            # 10. Extended final human-like pause (crucial for bot detection)
+            await asyncio.sleep(random.uniform(5, 12))
             
         except Exception as e:
             logger.error(f"Navigation failed for {url}: {e}")
-            # Try to continue anyway
-            await asyncio.sleep(random.uniform(5, 10))
+            # Enhanced recovery with realistic delays
+            await asyncio.sleep(random.uniform(10, 20))
+    
+    async def _execute_bot_evasion_sequence(self, page: Page) -> None:
+        """Execute advanced bot evasion when detected"""
+        try:
+            logger.info("🛡️ Executing advanced bot evasion sequence")
+            
+            # 1. Longer pause to simulate confusion/thinking
+            await asyncio.sleep(random.uniform(8, 15))
+            
+            # 2. Change viewport to common real user resolution
+            await page.set_viewport_size({'width': 1366, 'height': 768})
+            await asyncio.sleep(random.uniform(2, 4))
+            
+            # 3. Simulate back/forward navigation (human curiosity)
+            try:
+                await page.go_back(timeout=10000)
+                await asyncio.sleep(random.uniform(3, 6))
+                await page.go_forward(timeout=10000)
+                await asyncio.sleep(random.uniform(2, 5))
+            except:
+                pass
+            
+            # 4. Multiple realistic mouse movements and hovers
+            for _ in range(random.randint(3, 6)):
+                try:
+                    # Hover over various page elements
+                    elements = await page.query_selector_all('a, button, img, .product-item')
+                    if elements:
+                        element = random.choice(elements)
+                        await element.hover(timeout=3000)
+                        await asyncio.sleep(random.uniform(1, 3))
+                except:
+                    pass
+            
+            # 5. Simulate typing in search with realistic patterns
+            search_selectors = ['input[type="search"]', 'input[placeholder*="ara"]', 'input[name="q"]', '[data-testid="suggestion"]']
+            for selector in search_selectors:
+                try:
+                    element = await page.query_selector(selector)
+                    if element:
+                        await element.click()
+                        await asyncio.sleep(random.uniform(0.5, 1.5))
+                        
+                        # Simulate human typing with errors and corrections
+                        search_terms = ["makyaj", "kozmetik", "cilt bakım"]
+                        term = random.choice(search_terms)
+                        
+                        # Type with realistic speed and occasional errors
+                        for char in term:
+                            if random.random() < 0.05:  # 5% chance of typo
+                                await page.keyboard.type(chr(ord(char) + 1), delay=random.randint(80, 200))
+                                await asyncio.sleep(random.uniform(0.1, 0.3))
+                                await page.keyboard.press('Backspace')
+                                await asyncio.sleep(random.uniform(0.1, 0.2))
+                            await page.keyboard.type(char, delay=random.randint(100, 300))
+                        
+                        await asyncio.sleep(random.uniform(1, 3))
+                        await page.keyboard.press('Escape')
+                        await asyncio.sleep(random.uniform(0.5, 1))
+                        break
+                except:
+                    continue
+            
+            # 6. Scroll with natural patterns (humans scroll a lot)
+            for _ in range(random.randint(2, 5)):
+                scroll_amount = random.randint(200, 800)
+                await page.mouse.wheel(0, scroll_amount)
+                await asyncio.sleep(random.uniform(1, 3))
+                
+            # 7. Simulate right-click context menu (humans do this)
+            try:
+                await page.mouse.click(random.randint(300, 800), random.randint(200, 600), button='right')
+                await asyncio.sleep(random.uniform(0.5, 1))
+                await page.keyboard.press('Escape')
+            except:
+                pass
+                
+            # 8. Extended final delay to let things settle
+            await asyncio.sleep(random.uniform(10, 20))
+            
+            logger.info("✅ Bot evasion sequence completed")
+                
+        except Exception as e:
+            logger.debug(f"Bot evasion sequence failed: {e}")
+    
+    async def _simulate_reading_behavior(self, page: Page) -> None:
+        """Simulate human reading patterns"""
+        try:
+            # Scroll down slowly like reading
+            for _ in range(random.randint(2, 4)):
+                scroll_amount = random.randint(150, 400)
+                await page.evaluate(f"""
+                    () => {{
+                        window.scrollBy({{
+                            top: {scroll_amount},
+                            left: 0,
+                            behavior: 'smooth'
+                        }});
+                    }}
+                """)
+                # Human reading pause
+                await asyncio.sleep(random.uniform(1.5, 4))
+                
+        except Exception as e:
+            logger.debug(f"Reading simulation failed: {e}")
+    
+    async def _perform_natural_mouse_movements(self, page: Page) -> None:
+        """Perform very natural mouse movements"""
+        try:
+            viewport_size = page.viewport_size
+            width = viewport_size.get('width', 1920)
+            height = viewport_size.get('height', 1080)
+            
+            # Multiple natural mouse movements
+            for _ in range(random.randint(3, 7)):
+                # Calculate natural movement path
+                start_x = random.randint(50, width - 50)
+                start_y = random.randint(50, height - 50)
+                end_x = start_x + random.randint(-200, 200)
+                end_y = start_y + random.randint(-200, 200)
+                
+                # Ensure coordinates are within bounds
+                end_x = max(50, min(width - 50, end_x))
+                end_y = max(50, min(height - 50, end_y))
+                
+                # Natural curved movement
+                await page.mouse.move(start_x, start_y)
+                await asyncio.sleep(random.uniform(0.1, 0.3))
+                
+                # Move with realistic speed variation
+                steps = random.randint(15, 30)
+                await page.mouse.move(end_x, end_y, steps=steps)
+                await asyncio.sleep(random.uniform(0.2, 0.8))
+                
+                # Sometimes hover over elements
+                if random.random() < 0.4:
+                    try:
+                        elements = await page.query_selector_all('a, button, .product')
+                        if elements:
+                            element = random.choice(elements)
+                            await element.hover(timeout=2000)
+                            await asyncio.sleep(random.uniform(0.5, 1.5))
+                    except:
+                        pass
+                        
+        except Exception as e:
+            logger.debug(f"Natural mouse movements failed: {e}")
+    
+    async def _human_scroll_pattern(self, page: Page) -> None:
+        """Simulate realistic human scrolling patterns"""
+        try:
+            # Various scrolling patterns humans use
+            scroll_patterns = [
+                # Slow continuous scroll
+                lambda: self._slow_continuous_scroll(page),
+                # Quick scroll then pause
+                lambda: self._quick_scroll_pause(page), 
+                # Random direction scrolling
+                lambda: self._random_direction_scroll(page)
+            ]
+            
+            # Execute random scroll pattern
+            pattern = random.choice(scroll_patterns)
+            await pattern()
+            
+        except Exception as e:
+            logger.debug(f"Human scroll pattern failed: {e}")
+    
+    async def _slow_continuous_scroll(self, page: Page) -> None:
+        """Slow continuous scrolling like reading"""
+        for _ in range(random.randint(2, 5)):
+            scroll_amount = random.randint(100, 300)
+            await page.evaluate(f"""
+                () => {{
+                    window.scrollBy({{
+                        top: {scroll_amount},
+                        left: 0,
+                        behavior: 'smooth'
+                    }});
+                }}
+            """)
+            await asyncio.sleep(random.uniform(1, 3))
+    
+    async def _quick_scroll_pause(self, page: Page) -> None:
+        """Quick scroll followed by longer pause"""
+        scroll_amount = random.randint(300, 600)
+        await page.evaluate(f"""
+            () => {{
+                window.scrollBy({{
+                    top: {scroll_amount},
+                    left: 0,
+                    behavior: 'smooth'
+                }});
+            }}
+        """)
+        await asyncio.sleep(random.uniform(2, 5))
+    
+    async def _random_direction_scroll(self, page: Page) -> None:
+        """Scroll in different directions randomly"""
+        directions = [
+            (0, random.randint(200, 400)),    # Down
+            (0, -random.randint(100, 200)),   # Up  
+            (random.randint(-100, 100), 0),   # Horizontal
+        ]
+        
+        for dx, dy in random.sample(directions, random.randint(1, 2)):
+            await page.evaluate(f"""
+                () => {{
+                    window.scrollBy({{
+                        top: {dy},
+                        left: {dx},
+                        behavior: 'smooth'
+                    }});
+                }}
+            """)
+            await asyncio.sleep(random.uniform(0.5, 2))
         
     async def _handle_infinite_scroll(self, page: Page) -> None:
         """Handle infinite scroll to load more products"""
@@ -538,8 +1970,20 @@ class ModernScraperAgent:
                     "product_link": "div.p-card-wrppr a[href*='/p-'], .product-item a[href*='/p-'], .prd-link a[href*='/p-']"
                 },
                 {
-                    "name": "Alternative Trendyol", 
-                    "product_link": "a[href*='/p-']:not([href*='/c-']):not([href*='/category']), .product-container a[href*='/p-']"
+                    "name": "Modern Trendyol Cards", 
+                    "product_link": ".p-card-chldrn-cntnr a, [data-id*='product'] a, .product-card a, [class*='product-'] a[href*='-p-'], a[href*='-p-']:not([href*='/c']):not([href*='/brand/']) "
+                },
+                {
+                    "name": "Trendyol Product Links", 
+                    "product_link": "a[href*='/p-']:not([href*='/c-']):not([href*='/category']):not([href*='/brand']), .product-container a[href*='/p-']"
+                },
+                {
+                    "name": "Trendyol Universal", 
+                    "product_link": "a[href*='trendyol.com/'][href*='-p-'], [class*='card'] a[href*='-p-'], [data-testid*='product'] a"
+                },
+                {
+                    "name": "Trendyol Aggressive", 
+                    "product_link": "a[href*='-p-']:not([href*='/c']):not([href*='butik']):not([href*='search']), a[href][title], a[href*='trendyol'][href*='-p-']"
                 },
                 {
                     "name": "Generic Trendyol",
@@ -685,44 +2129,492 @@ class ModernScraperAgent:
             return False
     
     async def scrape_product_advanced(self, url: str, site_name: str) -> Dict[str, Any]:
-        """Advanced product scraping with multiple extraction strategies"""
+        """🚀 ULTRA-DEEP product scraping with comprehensive content discovery"""
         page = await self.context.new_page()
         
         try:
+            logger.info(f"🔍 DEEP SCRAPER: Starting comprehensive analysis of {url}")
+            
             # Navigate with human behavior
             await self._human_like_navigation(page, url)
             
-            # Strategy 1: Modern selector-based extraction
-            product_data = await self._modern_selector_extraction(page, site_name)
+            # 🌟 NEW STRATEGY 1: Deep Page Exploration - Scroll and discover all content
+            await self._deep_page_exploration(page, url)
             
-            # Strategy 2: AI-powered content extraction if primary fails
-            if not product_data.get('name') or not product_data.get('description'):
-                ai_data = await self._ai_content_extraction(page)
-                product_data.update(ai_data)
+            # 🌟 ENHANCED STRATEGY 2: Modern selector-based extraction with deep search
+            product_data = await self._enhanced_modern_extraction(page, site_name)
             
-            # Strategy 3: Structured data extraction
+            # 🌟 ENHANCED STRATEGY 3: AI-powered deep content discovery
+            ai_data = await self._ai_deep_content_discovery(page, url)
+            product_data.update(ai_data)
+            
+            # 🌟 NEW STRATEGY 4: Long description mining from page bottom
+            long_descriptions = await self._extract_bottom_descriptions(page)
+            if long_descriptions:
+                product_data['long_descriptions'] = long_descriptions
+                if not product_data.get('description') or len(product_data['description']) < 100:
+                    product_data['description'] = long_descriptions[0] if long_descriptions else product_data.get('description', '')
+            
+            # 🌟 ENHANCED STRATEGY 5: Tab and accordion content extraction
+            hidden_content = await self._extract_hidden_content(page)
+            product_data.update(hidden_content)
+            
+            # Original strategies (enhanced)
             structured_data = await self._extract_structured_data(page)
             if structured_data:
                 product_data.update(structured_data)
             
-            # Strategy 4: Meta tag extraction
             meta_data = await self._extract_meta_data(page)
             product_data.update(meta_data)
             
-            # Clean and validate data
-            product_data = self._clean_product_data(product_data, url, site_name)
+            # 🌟 NEW STRATEGY 6: Image analysis for additional product info
+            image_data = await self._extract_comprehensive_images(page)
+            if image_data:
+                product_data['images'] = image_data
+            
+            # Enhanced data cleaning with deep content preservation
+            product_data = self._enhanced_clean_product_data(product_data, url, site_name)
+            
+            logger.info(f"✅ DEEP SCRAPER: Successfully extracted comprehensive data from {url}")
+            logger.info(f"📊 Data richness: Description: {len(product_data.get('description', ''))}, Features: {len(product_data.get('features', []))}, Images: {len(product_data.get('images', []))}")
             
             return {
                 "success": True,
                 "product_data": product_data,
-                "status": "success"
+                "status": "success",
+                "extraction_depth": "ultra_deep"
             }
             
         except Exception as e:
-            logger.error(f"Advanced scraping failed for {url}: {e}")
+            logger.error(f"❌ Deep scraping failed for {url}: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {"error": str(e), "product_data": None}
         finally:
             await page.close()
+    
+    async def _deep_page_exploration(self, page: Page, url: str):
+        """🌟 Deep page exploration - scroll down and discover all content sections"""
+        try:
+            logger.info(f"🚀 Starting deep page exploration for {url}")
+            
+            # Wait for initial content load
+            await page.wait_for_load_state('networkidle', timeout=10000)
+            
+            # Intelligent scrolling to discover all content
+            await self._intelligent_scroll_discovery(page)
+            
+            # Click on tabs and expandable sections
+            await self._activate_content_sections(page)
+            
+            # Wait for any lazy-loaded content
+            await asyncio.sleep(2)
+            
+            logger.info("✅ Deep page exploration completed")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Deep exploration warning: {e}")
+    
+    async def _intelligent_scroll_discovery(self, page: Page):
+        """Intelligently scroll through page to discover all content"""
+        try:
+            # Get initial page height
+            previous_height = await page.evaluate("document.body.scrollHeight")
+            scroll_attempts = 0
+            max_attempts = 10
+            
+            while scroll_attempts < max_attempts:
+                # Scroll down gradually (human-like)
+                await page.evaluate("window.scrollBy(0, window.innerHeight * 0.8)")
+                await asyncio.sleep(1)
+                
+                # Check if new content loaded
+                new_height = await page.evaluate("document.body.scrollHeight")
+                if new_height == previous_height:
+                    scroll_attempts += 1
+                else:
+                    scroll_attempts = 0  # Reset if new content found
+                    previous_height = new_height
+                
+                # Look for "Load More" or "Show More" buttons
+                load_more_selectors = [
+                    'button[class*="more"]', 'button[class*="load"]', 'a[class*="more"]',
+                    'button:contains("Daha Fazla")', 'button:contains("Load More")',
+                    'button:contains("Show More")', 'button:contains("Devamı")'
+                ]
+                
+                for selector in load_more_selectors:
+                    try:
+                        await page.click(selector, timeout=2000)
+                        await asyncio.sleep(2)
+                        logger.info(f"📱 Clicked load more button: {selector}")
+                        break
+                    except:
+                        continue
+            
+            # Scroll to bottom
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(1)
+            
+            logger.info(f"🔄 Completed intelligent scrolling discovery")
+            
+        except Exception as e:
+            logger.warning(f"Scrolling discovery warning: {e}")
+    
+    async def _activate_content_sections(self, page: Page):
+        """Activate tabs, accordions, and expandable content sections"""
+        try:
+            # Common tab selectors
+            tab_selectors = [
+                'div[class*="tab"] button', 'ul[class*="tab"] li', 'div[role="tab"]',
+                '.tabs button', '.tab-list button', '[data-tab]'
+            ]
+            
+            # Common accordion selectors  
+            accordion_selectors = [
+                'div[class*="accordion"] button', 'div[class*="collapse"] button',
+                'details summary', '[data-toggle="collapse"]', '.accordion-toggle'
+            ]
+            
+            # Common expandable content selectors
+            expandable_selectors = [
+                'button:contains("Detay")', 'button:contains("Detail")',
+                'button:contains("Açıklama")', 'button:contains("Description")',
+                'button:contains("Özellik")', 'button:contains("Features")',
+                'a:contains("Daha fazla")', 'a:contains("Read more")'
+            ]
+            
+            all_selectors = tab_selectors + accordion_selectors + expandable_selectors
+            
+            for selector in all_selectors:
+                try:
+                    elements = await page.query_selector_all(selector)
+                    for element in elements[:5]:  # Limit to avoid too many clicks
+                        try:
+                            await element.click()
+                            await asyncio.sleep(0.5)  # Brief wait
+                        except:
+                            continue
+                except:
+                    continue
+            
+            logger.info(f"🎯 Activated content sections")
+            
+        except Exception as e:
+            logger.warning(f"Content section activation warning: {e}")
+    
+    async def _extract_bottom_descriptions(self, page: Page) -> List[str]:
+        """🎯 Extract long descriptions from bottom sections of the page"""
+        try:
+            # Scroll to bottom first
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(1)
+            
+            # Look for description sections in bottom areas
+            bottom_description_selectors = [
+                # Generic description selectors
+                'div[class*="description"]:last-of-type',
+                'div[class*="detail"]:last-of-type', 
+                'section[class*="description"]',
+                'div[class*="content"]:last-of-type',
+                
+                # E-commerce specific selectors
+                '.product-description', '.product-details', '.product-content',
+                '.description-full', '.full-description', '.detailed-description',
+                
+                # Turkish e-commerce selectors
+                '.urun-aciklama', '.detay-aciklama', '.aciklama-detay',
+                'div:contains("Ürün Açıklaması")', 'div:contains("Detaylı Açıklama")',
+                
+                # Bottom section selectors
+                'div:last-child p', 'section:last-of-type div', 
+                'main > div:last-child', 'article > div:last-child',
+                
+                # Long content indicators
+                'div[class*="long"]', 'div[class*="full"]', 'div[class*="complete"]'
+            ]
+            
+            descriptions = []
+            
+            for selector in bottom_description_selectors:
+                try:
+                    elements = await page.query_selector_all(selector)
+                    for element in elements:
+                        text = await element.inner_text()
+                        if text and len(text.strip()) > 50:  # Only substantial descriptions
+                            clean_text = text.strip()
+                            if clean_text not in descriptions:
+                                descriptions.append(clean_text)
+                except:
+                    continue
+            
+            # Also search for long paragraphs in bottom half of page
+            long_paragraphs = await page.evaluate("""
+                () => {
+                    const pageHeight = document.body.scrollHeight;
+                    const bottomThreshold = pageHeight * 0.6; // Bottom 40% of page
+                    
+                    const paragraphs = Array.from(document.querySelectorAll('p, div'));
+                    return paragraphs
+                        .filter(p => {
+                            const rect = p.getBoundingClientRect();
+                            return rect.top > bottomThreshold && p.innerText.length > 100;
+                        })
+                        .map(p => p.innerText.trim())
+                        .slice(0, 5); // Max 5 long paragraphs
+                }
+            """)
+            
+            descriptions.extend(long_paragraphs)
+            
+            # Remove duplicates and sort by length (longest first)
+            unique_descriptions = list(dict.fromkeys(descriptions))
+            unique_descriptions.sort(key=len, reverse=True)
+            
+            logger.info(f"🎯 Found {len(unique_descriptions)} bottom descriptions")
+            return unique_descriptions[:3]  # Return top 3 longest
+            
+        except Exception as e:
+            logger.error(f"Bottom description extraction error: {e}")
+            return []
+    
+    async def _extract_hidden_content(self, page: Page) -> Dict[str, Any]:
+        """Extract content from tabs, accordions, and hidden sections"""
+        hidden_data = {
+            'features': [],
+            'ingredients': [],
+            'usage': '',
+            'additional_info': []
+        }
+        
+        try:
+            # JavaScript to extract all hidden/tab content
+            hidden_content = await page.evaluate("""
+                () => {
+                    const result = {
+                        features: [],
+                        ingredients: [],
+                        usage: '',
+                        additional_info: []
+                    };
+                    
+                    // Feature extraction from various sources
+                    const featureSelectors = [
+                        'div[class*="feature"]', 'ul[class*="feature"]',
+                        'div[class*="benefit"]', 'div[class*="advantage"]',
+                        'li', '.bullet-point', '.highlight'
+                    ];
+                    
+                    featureSelectors.forEach(selector => {
+                        document.querySelectorAll(selector).forEach(el => {
+                            const text = el.innerText?.trim();
+                            if (text && text.length > 10 && text.length < 200) {
+                                result.features.push(text);
+                            }
+                        });
+                    });
+                    
+                    // Ingredient extraction
+                    const ingredientKeywords = ['ingredient', 'içerik', 'composition', 'formula'];
+                    document.querySelectorAll('*').forEach(el => {
+                        const text = el.innerText?.toLowerCase() || '';
+                        if (ingredientKeywords.some(keyword => text.includes(keyword))) {
+                            const content = el.innerText?.trim();
+                            if (content && content.length > 20) {
+                                result.ingredients.push(content);
+                            }
+                        }
+                    });
+                    
+                    // Usage instructions
+                    const usageKeywords = ['kullanım', 'usage', 'how to use', 'directions', 'nasıl kullanılır'];
+                    document.querySelectorAll('*').forEach(el => {
+                        const text = el.innerText?.toLowerCase() || '';
+                        if (usageKeywords.some(keyword => text.includes(keyword)) && !result.usage) {
+                            result.usage = el.innerText?.trim() || '';
+                        }
+                    });
+                    
+                    return result;
+                }
+            """)
+            
+            hidden_data.update(hidden_content)
+            logger.info(f"🔍 Extracted hidden content: {len(hidden_data['features'])} features, {len(hidden_data['ingredients'])} ingredients")
+            
+        except Exception as e:
+            logger.error(f"Hidden content extraction error: {e}")
+        
+        return hidden_data
+    
+    async def _extract_comprehensive_images(self, page: Page) -> List[str]:
+        """Extract all product images comprehensively"""
+        try:
+            images = await page.evaluate("""
+                () => {
+                    const imageSelectors = [
+                        'img[class*="product"]',
+                        'img[class*="item"]',
+                        'div[class*="gallery"] img',
+                        'div[class*="slider"] img',
+                        'div[class*="carousel"] img',
+                        '.product-image img',
+                        '.gallery img',
+                        '.thumbnail img'
+                    ];
+                    
+                    const imageUrls = new Set();
+                    
+                    imageSelectors.forEach(selector => {
+                        document.querySelectorAll(selector).forEach(img => {
+                            const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy');
+                            if (src && !src.includes('placeholder') && !src.includes('loading')) {
+                                imageUrls.add(src);
+                            }
+                        });
+                    });
+                    
+                    return Array.from(imageUrls).slice(0, 10); // Max 10 images
+                }
+            """)
+            
+            logger.info(f"🖼️ Extracted {len(images)} comprehensive images")
+            return images
+            
+        except Exception as e:
+            logger.error(f"Image extraction error: {e}")
+            return []
+    
+    async def _enhanced_modern_extraction(self, page: Page, site_name: str) -> Dict[str, Any]:
+        """Enhanced modern extraction with deep content discovery"""
+        # Use the original method but with enhanced selectors
+        basic_data = await self._modern_selector_extraction(page, site_name)
+        
+        # Enhance with additional deep extraction
+        enhanced_data = await page.evaluate("""
+            () => {
+                const data = {};
+                
+                // Enhanced name extraction
+                if (!data.name) {
+                    const nameSelectors = [
+                        'h1', '.product-title', '.product-name', '.item-title',
+                        '[class*="title"]:first-of-type', '[class*="name"]:first-of-type'
+                    ];
+                    for (const selector of nameSelectors) {
+                        const el = document.querySelector(selector);
+                        if (el && el.innerText?.trim()) {
+                            data.name = el.innerText.trim();
+                            break;
+                        }
+                    }
+                }
+                
+                // Enhanced description with priority for longer content
+                const descriptionSelectors = [
+                    '.product-description', '.description', '.content',
+                    '[class*="detail"]', '[class*="info"]', 'p'
+                ];
+                
+                let longestDescription = '';
+                for (const selector of descriptionSelectors) {
+                    document.querySelectorAll(selector).forEach(el => {
+                        const text = el.innerText?.trim();
+                        if (text && text.length > longestDescription.length) {
+                            longestDescription = text;
+                        }
+                    });
+                }
+                
+                if (longestDescription) {
+                    data.description = longestDescription;
+                }
+                
+                return data;
+            }
+        """)
+        
+        # Merge enhanced data with basic data
+        basic_data.update(enhanced_data)
+        return basic_data
+    
+    async def _ai_deep_content_discovery(self, page: Page, url: str) -> Dict[str, Any]:
+        """AI-powered deep content discovery with comprehensive analysis"""
+        try:
+            # Enhanced AI extraction with deeper analysis
+            ai_data = await page.evaluate("""
+                () => {
+                    const data = {
+                        reviews: [],
+                        specifications: {},
+                        brand_info: '',
+                        category_hints: []
+                    };
+                    
+                    // Extract reviews/comments
+                    const reviewSelectors = [
+                        '.review', '.comment', '[class*="review"]', 
+                        '[class*="feedback"]', '[class*="opinion"]'
+                    ];
+                    
+                    reviewSelectors.forEach(selector => {
+                        document.querySelectorAll(selector).forEach(el => {
+                            const text = el.innerText?.trim();
+                            if (text && text.length > 20 && text.length < 500) {
+                                data.reviews.push(text);
+                            }
+                        });
+                    });
+                    
+                    // Extract specifications
+                    document.querySelectorAll('table tr, .spec-item, .specification').forEach(el => {
+                        const text = el.innerText?.trim();
+                        if (text && text.includes(':')) {
+                            const [key, value] = text.split(':').map(s => s.trim());
+                            if (key && value) {
+                                data.specifications[key] = value;
+                            }
+                        }
+                    });
+                    
+                    // Extract brand info
+                    const brandSelectors = ['.brand', '[class*="brand"]', '[class*="manufacturer"]'];
+                    for (const selector of brandSelectors) {
+                        const el = document.querySelector(selector);
+                        if (el && el.innerText?.trim()) {
+                            data.brand_info = el.innerText.trim();
+                            break;
+                        }
+                    }
+                    
+                    return data;
+                }
+            """)
+            
+            logger.info(f"🤖 AI deep discovery extracted {len(ai_data.get('reviews', []))} reviews, {len(ai_data.get('specifications', {}))} specs")
+            return ai_data
+            
+        except Exception as e:
+            logger.error(f"AI deep content discovery error: {e}")
+            return {}
+    
+    def _enhanced_clean_product_data(self, data: Dict[str, Any], url: str, site_name: str) -> Dict[str, Any]:
+        """Enhanced data cleaning that preserves deep content"""
+        cleaned = self._clean_product_data(data, url, site_name)
+        
+        # Preserve long descriptions and additional content
+        if 'long_descriptions' in data:
+            cleaned['long_descriptions'] = data['long_descriptions']
+        
+        if 'specifications' in data:
+            cleaned['specifications'] = data['specifications']
+        
+        # Ensure we have substantial description
+        if cleaned.get('description') and len(cleaned['description']) < 50:
+            if 'long_descriptions' in data and data['long_descriptions']:
+                cleaned['description'] = data['long_descriptions'][0]
+        
+        return cleaned
     
     async def _modern_selector_extraction(self, page: Page, site_name: str) -> Dict[str, Any]:
         """Modern selector-based extraction with adaptive strategies and JavaScript fallback"""
@@ -1069,6 +2961,42 @@ class ModernScraperAgent:
         
         return cleaned
     
+    async def discover_and_scrape(self, site_name: str, category: str, limit: int = 10) -> Dict[str, Any]:
+        """Fast discovery and scraping method for compatibility with FastWorkflow"""
+        try:
+            await self.initialize_browser()
+            
+            # Discover URLs using the existing method
+            urls = await self.discover_urls_advanced(site_name, limit, category)
+            
+            # Scrape products from discovered URLs
+            products = []
+            for url in urls[:limit]:
+                try:
+                    product_data = await self.scrape_product_advanced(url, site_name)
+                    if product_data and product_data.get('success'):
+                        products.append(product_data.get('data', {}))
+                except Exception as e:
+                    logger.warning(f"Failed to scrape {url}: {e}")
+                    continue
+            
+            return {
+                'success': True,
+                'products': products,
+                'urls_found': len(urls),
+                'products_scraped': len(products)
+            }
+            
+        except Exception as e:
+            logger.error(f"discover_and_scrape error: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'products': [],
+                'urls_found': 0,
+                'products_scraped': 0
+            }
+    
     async def close(self):
         """Clean up resources"""
         if self.context:
@@ -1078,16 +3006,17 @@ class ModernScraperAgent:
 
 
 # Direct tool functions for integration
-async def discover_product_urls_advanced(site_name: str, max_products: int = 100) -> Dict[str, Any]:
-    """Advanced URL discovery function"""
+async def discover_product_urls_advanced(site_name: str, max_products: int = 100, target_category: str = None) -> Dict[str, Any]:
+    """Ultra-intelligent URL discovery with category-aware filtering"""
     scraper = ModernScraperAgent()
     
     try:
         await scraper.initialize_browser()
-        urls = await scraper.discover_urls_advanced(site_name, max_products)
+        urls = await scraper.discover_urls_advanced(site_name, max_products, target_category)
         
         return {
             "site_name": site_name,
+            "target_category": target_category,
             "discovered_urls": urls,
             "total_count": len(urls),
             "status": "success"
@@ -1119,7 +3048,7 @@ def create_modern_scraper_agent() -> Agent:
     """Factory function to create Modern Scraper Agent instance with ADK"""
     return Agent(
         name="modern_scraper_agent",
-        model="gemini-2.0-flash",
+        model="gemini-2.0-flash-thinking-exp",
         description="Ultra-modern web scraper with AI-powered adaptation and self-healing capabilities",
         instruction="""You are a Modern Scraper Agent with advanced capabilities for extracting data from e-commerce websites.
 

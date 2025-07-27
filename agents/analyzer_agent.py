@@ -172,14 +172,184 @@ class DataCleaningTool(BaseTool):
         return extracted
     
     def _categorize_content(self, product: ProductData) -> Dict[str, Any]:
-        """Categorize product content sections"""
+        """Advanced deep content analysis for superior SEO generation"""
+        
+        # Extract ALL textual content for comprehensive analysis
+        full_content = self._extract_comprehensive_content(product)
+        
         return {
             "main_description": product.description,
             "ingredients_list": product.ingredients,
             "key_features": product.features,
+            "deep_content_analysis": self._perform_deep_content_analysis(full_content),
+            "competitive_differentiation": self._identify_unique_selling_points(full_content),
+            "seo_content_opportunities": self._find_seo_content_gaps(full_content),
+            "professional_terminology": self._extract_scientific_terms(full_content),
+            "consumer_benefits_mapping": self._map_consumer_benefits(full_content),
             "usage_instructions": product.usage or "",
             "customer_feedback": product.reviews[:5] if product.reviews else []
         }
+    
+    def _extract_comprehensive_content(self, product: ProductData) -> str:
+        """Extract all available textual content from product for deep analysis"""
+        content_parts = [
+            product.name or "",
+            product.brand or "",
+            product.description or "",
+            product.usage or "",
+            " ".join(product.ingredients) if product.ingredients else "",
+            " ".join(product.features) if product.features else "",
+            " ".join(product.reviews[:10]) if product.reviews else "",
+            getattr(product, 'category', '')
+        ]
+        
+        return " ".join(part for part in content_parts if part.strip())
+    
+    def _perform_deep_content_analysis(self, content: str) -> Dict[str, Any]:
+        """Analyze content depth and quality for SEO purposes"""
+        if not content:
+            return {"quality_score": 0, "depth_indicators": [], "content_richness": "poor"}
+        
+        # Content quality indicators
+        word_count = len(content.split())
+        unique_words = len(set(content.lower().split()))
+        
+        # Scientific/professional indicators
+        scientific_terms = ['clinically', 'dermatologically', 'scientifically', 'formula', 'proven', 'research', 'study', 'tested']
+        scientific_count = sum(1 for term in scientific_terms if term.lower() in content.lower())
+        
+        # Benefit/feature density
+        benefit_keywords = ['reduces', 'improves', 'enhances', 'provides', 'helps', 'prevents', 'protects', 'nourishes']
+        benefit_count = sum(1 for keyword in benefit_keywords if keyword.lower() in content.lower())
+        
+        # Calculate quality score
+        quality_score = min(100, (
+            (word_count * 2) +
+            (unique_words * 3) +
+            (scientific_count * 10) +
+            (benefit_count * 5)
+        ) // 10)
+        
+        return {
+            "word_count": word_count,
+            "unique_word_ratio": round(unique_words / max(word_count, 1), 2),
+            "scientific_authority": scientific_count,
+            "benefit_density": benefit_count,
+            "quality_score": quality_score,
+            "content_richness": "excellent" if quality_score > 70 else "good" if quality_score > 40 else "needs_improvement"
+        }
+    
+    def _identify_unique_selling_points(self, content: str) -> List[str]:
+        """Identify unique selling propositions from content"""
+        if not content:
+            return []
+        
+        content_lower = content.lower()
+        usps = []
+        
+        # Technology/innovation indicators
+        tech_terms = ['advanced', 'innovative', 'breakthrough', 'patented', 'exclusive', 'unique', 'revolutionary']
+        for term in tech_terms:
+            if term in content_lower:
+                usps.append(f"innovative_technology:{term}")
+        
+        # Natural/organic indicators
+        natural_terms = ['organic', 'natural', 'botanical', 'plant-based', 'herbal', 'bio']
+        for term in natural_terms:
+            if term in content_lower:
+                usps.append(f"natural_formulation:{term}")
+        
+        # Professional indicators
+        pro_terms = ['professional', 'salon', 'dermatologist', 'expert', 'clinical']
+        for term in pro_terms:
+            if term in content_lower:
+                usps.append(f"professional_grade:{term}")
+        
+        return usps[:8]  # Top 8 USPs
+    
+    def _find_seo_content_gaps(self, content: str) -> Dict[str, List[str]]:
+        """Identify content gaps for SEO optimization"""
+        gaps = {
+            "missing_benefits": [],
+            "missing_ingredients": [],
+            "missing_usage_scenarios": [],
+            "missing_target_demographics": []
+        }
+        
+        if not content:
+            gaps["missing_benefits"] = ["moisturizing", "anti-aging", "protective", "nourishing"]
+            gaps["missing_ingredients"] = ["key_actives", "vitamins", "minerals"]
+            gaps["missing_usage_scenarios"] = ["daily_routine", "special_occasions"]
+            return gaps
+        
+        content_lower = content.lower()
+        
+        # Check for common cosmetic benefits
+        common_benefits = ["hydrating", "anti-aging", "brightening", "firming", "smoothing", "protecting"]
+        gaps["missing_benefits"] = [b for b in common_benefits if b not in content_lower]
+        
+        # Check for ingredient categories
+        ingredient_categories = ["vitamins", "peptides", "antioxidants", "acids", "oils"]
+        gaps["missing_ingredients"] = [i for i in ingredient_categories if i not in content_lower]
+        
+        # Check for usage contexts
+        usage_contexts = ["morning", "evening", "daily", "weekly", "before_makeup"]
+        gaps["missing_usage_scenarios"] = [u for u in usage_contexts if u not in content_lower]
+        
+        return gaps
+    
+    def _extract_scientific_terms(self, content: str) -> List[str]:
+        """Extract scientific/professional terminology"""
+        if not content:
+            return []
+        
+        scientific_patterns = [
+            r'\b[A-Z][a-z]*(?:\s+[A-Z][a-z]*)*\s+(?:acid|complex|peptide|extract)\b',
+            r'\b(?:retinol|niacinamide|hyaluronic|salicylic|glycolic|lactic)\b',
+            r'\b\d+%\s+[a-zA-Z]+\b',  # Concentration percentages
+            r'\b(?:clinically|dermatologically)\s+(?:tested|proven)\b'
+        ]
+        
+        scientific_terms = []
+        content_lower = content.lower()
+        
+        for pattern in scientific_patterns:
+            matches = re.findall(pattern, content_lower, re.IGNORECASE)
+            scientific_terms.extend(matches)
+        
+        return list(set(scientific_terms))[:10]
+    
+    def _map_consumer_benefits(self, content: str) -> Dict[str, List[str]]:
+        """Map functional benefits to consumer outcomes"""
+        if not content:
+            return {}
+        
+        content_lower = content.lower()
+        
+        benefit_mapping = {
+            "skin_improvement": [],
+            "convenience_benefits": [],
+            "emotional_benefits": [],
+            "long_term_results": []
+        }
+        
+        # Skin improvement indicators
+        skin_terms = ["smoother", "softer", "brighter", "clearer", "younger", "healthier"]
+        benefit_mapping["skin_improvement"] = [term for term in skin_terms if term in content_lower]
+        
+        # Convenience indicators
+        convenience_terms = ["easy", "quick", "instant", "effortless", "simple"]
+        benefit_mapping["convenience_benefits"] = [term for term in convenience_terms if term in content_lower]
+        
+        # Emotional indicators
+        emotional_terms = ["confident", "beautiful", "radiant", "glowing", "fresh"]
+        benefit_mapping["emotional_benefits"] = [term for term in emotional_terms if term in content_lower]
+        
+        # Long-term indicators
+        longterm_terms = ["lasting", "sustained", "continuous", "progressive", "cumulative"]
+        benefit_mapping["long_term_results"] = [term for term in longterm_terms if term in content_lower]
+        
+        return benefit_mapping
     
     def _calculate_text_stats(self, product: ProductData) -> Dict[str, int]:
         """Calculate text statistics"""
@@ -438,7 +608,7 @@ class AnalyzerAgent(LlmAgent):
         
         super().__init__(
             name="analyzer_agent",
-            model="gemini-1.5-pro-latest",
+            model="gemini-2.0-flash-thinking-exp",
             tools=tools,
             instruction="""
             You are an Analyzer Agent specialized in cleaning and analyzing cosmetic product data.

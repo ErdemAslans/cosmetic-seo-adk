@@ -1,4 +1,56 @@
+# Environment and credentials
 /.claude
 /.env
 /credentials.json
-/__pycache__
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/*.log
+*.log
+
+# Test and temporary data
+data/web_results/*.csv
+data/web_results/*.json
+data/web_results/*.xlsx
+/data/temp/
+
+# Cache
+cache/
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Node modules (if any)
+node_modules/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/

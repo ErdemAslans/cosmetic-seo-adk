@@ -13,7 +13,7 @@ import time
 from google.adk.agents import Agent
 
 from agents.scout_agent import create_scout_agent
-from agents.scraper_agent import create_scraper_agent
+from agents.modern_scraper_agent import ModernScraperAgent
 from agents.analyzer_agent import create_analyzer_agent
 from agents.seo_agent import create_seo_agent
 from agents.quality_agent import create_quality_agent
@@ -35,7 +35,7 @@ class CosmeticSEOOrchestrator:
         
         # Initialize agents using ADK
         self.scout_agent = create_scout_agent()
-        self.scraper_agent = create_scraper_agent()
+        self.scraper_agent = ModernScraperAgent()
         self.analyzer_agent = create_analyzer_agent()
         self.seo_agent = create_seo_agent()
         self.quality_agent = create_quality_agent()

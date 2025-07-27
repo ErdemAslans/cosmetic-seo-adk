@@ -1,0 +1,19 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install minimal requirements for basic functionality
+RUN pip install --no-cache-dir fastapi uvicorn jinja2 python-multipart loguru python-dotenv
+
+# Copy only essential files
+COPY agents/ ./agents/
+COPY config/ ./config/
+COPY templates/ ./templates/
+COPY web_app.py ./
+COPY test_seo_fix.py ./
+
+# Test the fix
+RUN python test_seo_fix.py
+
+# Default command
+CMD ["uvicorn", "web_app:app", "--host", "0.0.0.0", "--port", "3000"]

@@ -114,6 +114,11 @@ class SEOQualityValidationTool(BaseTool):
             if len(product.description) < self.quality_thresholds["min_description_length"]:
                 warnings.append("Product description too short for optimal SEO")
             
+            # Check for e-commerce contamination
+            contamination_issues = self._check_ecommerce_contamination(seo, product)
+            errors.extend(contamination_issues["errors"])
+            warnings.extend(contamination_issues["warnings"])
+            
             # Determine severity
             severity = "critical" if errors else ("warning" if warnings else "pass")
             
@@ -218,6 +223,52 @@ class SEOQualityValidationTool(BaseTool):
         score = max(70, min(100, score))  # minimum 70 (50'den 70'e)
         
         return round(score, 2)
+    
+    def _check_ecommerce_contamination(self, seo: SEOData, product: ProductData) -> Dict[str, List[str]]:
+        """Check for e-commerce platform contamination in SEO content"""
+        errors = []
+        warnings = []
+        
+        # E-ticaret platform isimleri
+        platform_names = ['trendyol', 'hepsiburada', 'amazon', 'gittigidiyor', 'n11', 'ciceksepeti']
+        
+        # Pazarlama terimleri
+        marketing_terms = ['yorumları', 'yorumlarını', 'inceleyin', 'özel indirim', 'indirimli fiyat', 
+                          'satın alın', 'kampanya', 'avantajlı fiyat', 'ücretsiz kargo']
+        
+        # SEO title kontrolü
+        title_lower = seo.title.lower()
+        for platform in platform_names:
+            if platform in title_lower:
+                errors.append(f"SEO title contains marketplace name: {platform}")
+        
+        for term in marketing_terms:
+            if term in title_lower:
+                warnings.append(f"SEO title contains marketing phrase: {term}")
+        
+        # Meta description kontrolü
+        desc_lower = seo.meta_description.lower()
+        for platform in platform_names:
+            if platform in desc_lower:
+                errors.append(f"Meta description contains marketplace name: {platform}")
+        
+        for term in marketing_terms:
+            if term in desc_lower:
+                errors.append(f"Meta description contains marketing phrase: {term}")
+        
+        # Keywords kontrolü
+        contaminated_keywords = []
+        for keyword in seo.keywords:
+            keyword_lower = keyword.lower()
+            if any(platform in keyword_lower for platform in platform_names):
+                contaminated_keywords.append(keyword)
+            elif any(term in keyword_lower for term in marketing_terms):
+                contaminated_keywords.append(keyword)
+        
+        if contaminated_keywords:
+            warnings.append(f"Keywords contain e-commerce terms: {', '.join(contaminated_keywords[:5])}")
+        
+        return {"errors": errors, "warnings": warnings}
     
     def _generate_recommendations(self, errors: List[str], warnings: List[str]) -> List[str]:
         """Generate improvement recommendations"""
@@ -424,7 +475,7 @@ class QualityAgent(LlmAgent):
         
         super().__init__(
             name="quality_agent",
-            model="gemini-1.5-pro-latest",
+            model="gemini-2.0-flash-thinking-exp",
             tools=tools,
             instruction="""
             You are a Quality Agent specialized in validating SEO data quality for cosmetic products.

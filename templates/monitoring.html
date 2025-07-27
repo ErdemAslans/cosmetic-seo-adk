@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 Production Monitoring Dashboard - Cosmetic SEO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            padding: 30px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .metric-title {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-healthy { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        .status-offline { background-color: #6c757d; }
+        
+        .system-status {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            border: none;
+            background: transparent;
+            color: #6c757d;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-custom {
+            height: 8px;
+            border-radius: 10px;
+            background: #e9ecef;
+        }
+        
+        .progress-bar-custom {
+            border-radius: 10px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .site-card {
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+        
+        .site-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .site-trendyol { border-left-color: #f27a1a; }
+        .site-gratis { border-left-color: #e91e63; }
+        .site-sephora { border-left-color: #000; }
+        .site-rossmann { border-left-color: #d32f2f; }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+        }
+        
+        .auto-refresh {
+            color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="dashboard-container">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="display-6 mb-0">
+                                <i class="fas fa-chart-line me-3" style="color: #667eea;"></i>
+                                Production Monitoring Dashboard
+                            </h1>
+                            <p class="text-muted mb-0">Real-time system health and performance metrics</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator auto-refresh"></span>
+                                <small class="text-muted">Auto-refresh every 30s</small>
+                            </div>
+                            <small class="text-muted" id="lastUpdate">Last updated: Loading...</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Overview -->
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="metric-card text-center">
+                        <div class="metric-title">Overall Health</div>
+                        <div class="metric-value" id="overallHealth">
+                            <i class="fas fa-heartbeat" style="color: #28a745;"></i>
+                        </div>
+                        <div id="healthStatus" class="text-success">Healthy</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card text-center">
+                        <div class="metric-title">Active Sessions</div>
+                        <div class="metric-value text-primary" id="activeSessions">-</div>
+                        <div class="text-muted small">Sessions running</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card text-center">
+                        <div class="metric-title">Success Rate</div>
+                        <div class="metric-value text-success" id="successRate">-</div>
+                        <div class="text-muted small">Last 24h</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card text-center">
+                        <div class="metric-title">Proxy Health</div>
+                        <div class="metric-value text-info" id="proxyHealth">-</div>
+                        <div class="text-muted small">Healthy proxies</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card text-center">
+                        <div class="metric-title">Daily Cost</div>
+                        <div class="metric-value text-warning" id="dailyCost">-</div>
+                        <div class="text-muted small">USD today</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card text-center">
+                        <div class="metric-title">Error Rate</div>
+                        <div class="metric-value text-danger" id="errorRate">-</div>
+                        <div class="text-muted small">Errors/hour</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="metric-card">
+                        <h5 class="mb-3"><i class="fas fa-server me-2"></i>System Components Status</h5>
+                        <div class="row" id="systemStatus">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs for detailed views -->
+            <ul class="nav nav-tabs" id="monitoringTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="sites-tab" data-bs-toggle="tab" data-bs-target="#sites" type="button">
+                        <i class="fas fa-globe me-2"></i>Site Performance
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="errors-tab" data-bs-toggle="tab" data-bs-target="#errors" type="button">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error Analytics
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="captcha-tab" data-bs-toggle="tab" data-bs-target="#captcha" type="button">
+                        <i class="fas fa-shield-alt me-2"></i>CAPTCHA Stats
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button">
+                        <i class="fas fa-tachometer-alt me-2"></i>Performance
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content mt-4" id="monitoringTabContent">
+                <!-- Site Performance Tab -->
+                <div class="tab-pane fade show active" id="sites" role="tabpanel">
+                    <div class="row" id="siteMetrics">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Error Analytics Tab -->
+                <div class="tab-pane fade" id="errors" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="metric-card">
+                                <h6><i class="fas fa-chart-pie me-2"></i>Error Distribution</h6>
+                                <div class="chart-container">
+                                    <canvas id="errorChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="metric-card">
+                                <h6><i class="fas fa-chart-line me-2"></i>Error Trend (24h)</h6>
+                                <div class="chart-container">
+                                    <canvas id="errorTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="metric-card">
+                                <h6><i class="fas fa-list me-2"></i>Recent Errors</h6>
+                                <div id="recentErrors">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAPTCHA Stats Tab -->
+                <div class="tab-pane fade" id="captcha" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="metric-card text-center">
+                                <div class="metric-title">CAPTCHAs Solved</div>
+                                <div class="metric-value text-primary" id="captchaSolved">-</div>
+                                <div class="text-muted small">Last 24h</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="metric-card text-center">
+                                <div class="metric-title">Success Rate</div>
+                                <div class="metric-value text-success" id="captchaSuccessRate">-</div>
+                                <div class="text-muted small">Solve accuracy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="metric-card text-center">
+                                <div class="metric-title">Avg Solve Time</div>
+                                <div class="metric-value text-info" id="captchaSolveTime">-</div>
+                                <div class="text-muted small">Seconds</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="metric-card">
+                                <h6><i class="fas fa-robot me-2"></i>CAPTCHA Provider Performance</h6>
+                                <div id="captchaProviders">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Tab -->
+                <div class="tab-pane fade" id="performance" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="metric-card">
+                                <h6><i class="fas fa-chart-bar me-2"></i>Session Performance</h6>
+                                <div class="chart-container">
+                                    <canvas id="sessionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="metric-card">
+                                <h6><i class="fas fa-network-wired me-2"></i>Proxy Performance</h6>
+                                <div class="chart-container">
+                                    <canvas id="proxyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="refreshData()" title="Refresh Data">
+        <i class="fas fa-sync-alt" id="refreshIcon"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let refreshInterval;
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            startAutoRefresh();
+        });
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshData, 30000); // 30 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        async function refreshData() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            refreshIcon.classList.add('fa-spin');
+            
+            try {
+                // Fetch production status
+                const response = await fetch('/production-status');
+                const data = await response.json();
+                
+                updateOverviewMetrics(data);
+                updateSystemStatus(data.system_status);
+                updateSiteMetrics(data.metrics);
+                updateErrorAnalytics(data.metrics.error_recovery);
+                updateCaptchaStats(data.metrics.captcha_solver);
+                
+                document.getElementById('lastUpdate').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+                    
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showError('Failed to fetch monitoring data');
+            } finally {
+                refreshIcon.classList.remove('fa-spin');
+            }
+        }
+
+        function updateOverviewMetrics(data) {
+            const metrics = data.metrics;
+            
+            // Overall health
+            const healthyCount = Object.values(data.system_status).filter(Boolean).length;
+            const totalSystems = Object.keys(data.system_status).length;
+            const healthPercentage = (healthyCount / totalSystems * 100).toFixed(0);
+            
+            if (healthPercentage >= 80) {
+                document.getElementById('healthStatus').textContent = 'Healthy';
+                document.getElementById('healthStatus').className = 'text-success';
+            } else if (healthPercentage >= 60) {
+                document.getElementById('healthStatus').textContent = 'Warning';
+                document.getElementById('healthStatus').className = 'text-warning';
+            } else {
+                document.getElementById('healthStatus').textContent = 'Critical';
+                document.getElementById('healthStatus').className = 'text-danger';
+            }
+
+            // Active sessions
+            if (metrics.session_manager) {
+                document.getElementById('activeSessions').textContent = 
+                    metrics.session_manager.session_metrics.total_sessions || 0;
+            }
+
+            // Success rate
+            if (metrics.error_recovery) {
+                const errorData = metrics.error_recovery;
+                const totalErrors = errorData.summary.total_errors_24h || 0;
+                const successRate = Math.max(0, 100 - (totalErrors * 2)); // Rough calculation
+                document.getElementById('successRate').textContent = `${successRate}%`;
+            }
+
+            // Proxy health
+            if (metrics.session_manager && metrics.session_manager.proxy_health) {
+                const proxyHealth = Object.values(metrics.session_manager.proxy_health)
+                    .filter(p => p.health_score > 0.7).length;
+                document.getElementById('proxyHealth').textContent = proxyHealth;
+            }
+
+            // Daily cost
+            if (metrics.session_manager && metrics.session_manager.cost_tracking) {
+                const cost = metrics.session_manager.cost_tracking.total_daily_cost || 0;
+                document.getElementById('dailyCost').textContent = `$${cost.toFixed(2)}`;
+            }
+
+            // Error rate
+            if (metrics.error_recovery) {
+                const errors = metrics.error_recovery.summary.total_errors_24h || 0;
+                const errorRate = (errors / 24).toFixed(1); // Errors per hour
+                document.getElementById('errorRate').textContent = errorRate;
+            }
+        }
+
+        function updateSystemStatus(systemStatus) {
+            const container = document.getElementById('systemStatus');
+            container.innerHTML = '';
+
+            const systems = [
+                { key: 'stealth_browser', name: 'Ultra-Stealth Browser', icon: 'fas fa-mask' },
+                { key: 'selector_engine', name: 'AI Selector Engine', icon: 'fas fa-robot' },
+                { key: 'session_manager', name: 'Session Manager', icon: 'fas fa-network-wired' },
+                { key: 'captcha_solver', name: 'CAPTCHA Solver', icon: 'fas fa-shield-alt' },
+                { key: 'error_recovery', name: 'Error Recovery', icon: 'fas fa-life-ring' },
+                { key: 'fast_workflow', name: 'Fast Workflow', icon: 'fas fa-bolt' }
+            ];
+
+            systems.forEach(system => {
+                const status = systemStatus[system.key];
+                const statusClass = status ? 'status-healthy' : 'status-offline';
+                const statusText = status ? 'Online' : 'Offline';
+                
+                const col = document.createElement('div');
+                col.className = 'col-md-4 mb-3';
+                col.innerHTML = `
+                    <div class="system-status">
+                        <div class="d-flex align-items-center">
+                            <i class="${system.icon} me-3" style="font-size: 1.2rem; color: #667eea;"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">${system.name}</div>
+                                <div class="small text-muted d-flex align-items-center">
+                                    <span class="status-indicator ${statusClass}"></span>
+                                    ${statusText}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function updateSiteMetrics(metrics) {
+            const container = document.getElementById('siteMetrics');
+            const sites = ['trendyol', 'gratis', 'sephora_tr', 'rossmann'];
+            
+            container.innerHTML = '';
+
+            sites.forEach(site => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 mb-3';
+                
+                const siteData = getSiteHealthData(site, metrics);
+                
+                col.innerHTML = `
+                    <div class="metric-card site-card site-${site}">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">${siteData.name}</h6>
+                            <span class="badge bg-${siteData.badgeColor}">${siteData.status}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="metric-title">Success Rate</div>
+                                <div class="h5 text-primary">${siteData.successRate}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-title">Errors (24h)</div>
+                                <div class="h5 text-danger">${siteData.errors}</div>
+                            </div>
+                        </div>
+                        <div class="progress progress-custom mt-2">
+                            <div class="progress-bar progress-bar-custom" style="width: ${siteData.healthScore}%"></div>
+                        </div>
+                        <small class="text-muted">Health Score: ${siteData.healthScore}%</small>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function getSiteHealthData(site, metrics) {
+            const siteNames = {
+                'trendyol': 'Trendyol',
+                'gratis': 'Gratis', 
+                'sephora_tr': 'Sephora TR',
+                'rossmann': 'Rossmann'
+            };
+            
+            // Mock data for demonstration - in real implementation, this would come from metrics
+            const mockData = {
+                'trendyol': { successRate: '90%', errors: 5, healthScore: 90, status: 'Excellent', badgeColor: 'success' },
+                'gratis': { successRate: '75%', errors: 12, healthScore: 75, status: 'Good', badgeColor: 'info' },
+                'sephora_tr': { successRate: '85%', errors: 8, healthScore: 85, status: 'Good', badgeColor: 'info' },
+                'rossmann': { successRate: '70%', errors: 15, healthScore: 70, status: 'Fair', badgeColor: 'warning' }
+            };
+            
+            return {
+                name: siteNames[site],
+                ...mockData[site]
+            };
+        }
+
+        function updateErrorAnalytics(errorData) {
+            if (!errorData) return;
+            
+            // Update error charts
+            updateErrorChart(errorData.error_types);
+            updateErrorTrendChart(errorData.hourly_trend);
+            updateRecentErrors(errorData.site_errors);
+        }
+
+        function updateCaptchaStats(captchaData) {
+            if (!captchaData) return;
+            
+            const overall = captchaData.overall;
+            document.getElementById('captchaSolved').textContent = overall.total_attempts || 0;
+            document.getElementById('captchaSuccessRate').textContent = 
+                `${(overall.success_rate * 100).toFixed(1)}%`;
+            document.getElementById('captchaSolveTime').textContent = 
+                `${overall.avg_solve_time.toFixed(1)}s`;
+            
+            // Update provider performance
+            updateCaptchaProviders(captchaData.providers);
+        }
+
+        function updateCaptchaProviders(providers) {
+            const container = document.getElementById('captchaProviders');
+            container.innerHTML = '';
+            
+            providers.forEach(provider => {
+                const div = document.createElement('div');
+                div.className = 'mb-2';
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">${provider.name}</span>
+                        <span class="badge bg-primary">${(provider.success_rate * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="progress progress-custom">
+                        <div class="progress-bar progress-bar-custom" 
+                             style="width: ${provider.success_rate * 100}%"></div>
+                    </div>
+                    <small class="text-muted">
+                        ${provider.attempts} attempts • $${provider.total_cost.toFixed(2)} cost
+                    </small>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateErrorChart(errorTypes) {
+            const ctx = document.getElementById('errorChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: errorTypes.map(e => e.type),
+                    datasets: [{
+                        data: errorTypes.map(e => e.count),
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateErrorTrendChart(hourlyTrend) {
+            const ctx = document.getElementById('errorTrendChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hourlyTrend.map(h => `${h.hour}:00`),
+                    datasets: [{
+                        label: 'Errors',
+                        data: hourlyTrend.map(h => h.error_count),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRecentErrors(siteErrors) {
+            const container = document.getElementById('recentErrors');
+            container.innerHTML = '';
+            
+            if (siteErrors.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No recent errors</p>';
+                return;
+            }
+            
+            siteErrors.slice(0, 5).forEach(error => {
+                const div = document.createElement('div');
+                div.className = 'alert alert-custom alert-light d-flex justify-content-between align-items-center';
+                div.innerHTML = `
+                    <div>
+                        <strong>${error.site}</strong>
+                        <span class="badge bg-danger ms-2">${error.total_errors} errors</span>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-success">
+                            Recovery: ${error.recovery_rate}%
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function showError(message) {
+            // Show error notification
+            console.error(message);
+        }
+
+        // Handle visibility change to pause/resume updates
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>

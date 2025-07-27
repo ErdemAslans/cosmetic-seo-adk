@@ -195,6 +195,250 @@
         .verlumeo-float:active {
             transform: scale(0.95);
         }
+        
+        /* Agent Status Boxes */
+        .agent-box {
+            background: rgba(255,255,255,0.9);
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        
+        .agent-box i {
+            font-size: 24px;
+            color: #666;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .agent-name {
+            font-weight: bold;
+            font-size: 12px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .status-text {
+            font-size: 10px;
+            color: #888;
+        }
+        
+        .agent-box.active {
+            border-color: #007bff;
+            background: rgba(0,123,255,0.1);
+            animation: pulse 2s infinite;
+        }
+        
+        .agent-box.active i {
+            color: #007bff;
+        }
+        
+        .agent-box.completed {
+            border-color: #28a745;
+            background: rgba(40,167,69,0.1);
+        }
+        
+        .agent-box.completed i {
+            color: #28a745;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0,123,255,0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0,123,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,123,255,0); }
+        }
+        
+        /* SEO Section Styling */
+        .seo-section {
+            border-left: 4px solid #007bff;
+            transition: all 0.3s ease;
+        }
+        
+        .seo-section:hover {
+            background: rgba(0,123,255,0.05) !important;
+            transform: translateX(2px);
+        }
+
+        /* N8N Style Workflow Visualization */
+        .workflow-container {
+            background: #fafbfc;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            position: relative;
+            overflow: auto;
+            min-height: 300px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .workflow-canvas {
+            position: relative;
+            width: 1200px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        
+        .workflow-node {
+            position: absolute;
+            width: 120px;
+            height: 80px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .workflow-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+        
+        .workflow-node.pending {
+            border-color: #9ca3af;
+            background: #f9fafb;
+            color: #6b7280;
+        }
+        
+        .workflow-node.running {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            color: #1d4ed8;
+            animation: pulse-node 2s infinite;
+        }
+        
+        .workflow-node.completed {
+            border-color: #10b981;
+            background: #d1fae5;
+            color: #047857;
+        }
+        
+        .workflow-node.error {
+            border-color: #ef4444;
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        @keyframes pulse-node {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .workflow-connection {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #cbd5e1, #94a3b8);
+            border-radius: 2px;
+            z-index: 1;
+        }
+        
+        .workflow-connection.active {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            height: 3px;
+            animation: flow 2s infinite;
+        }
+        
+        @keyframes flow {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        
+        .workflow-node-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        /* Tooltip Styles */
+        .workflow-tooltip {
+            position: absolute;
+            background: #1f2937;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            min-width: 300px;
+            max-width: 500px;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .workflow-tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .workflow-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #1f2937;
+        }
+        
+        .tooltip-section {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #374151;
+        }
+        
+        .tooltip-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .tooltip-title {
+            font-weight: 600;
+            color: #f59e0b;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .tooltip-content {
+            word-wrap: break-word;
+            color: #d1d5db;
+        }
+        
+        .workflow-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .workflow-toggle:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -294,6 +538,92 @@
                         </div>
                     </div>
                     
+                    <!-- Live Agent Progress -->
+                    <div class="mt-4">
+                        <h6><i class="fas fa-users"></i> AI Agents Status</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-2">
+                                <div class="agent-box" id="scoutAgent">
+                                    <i class="fas fa-search"></i>
+                                    <div class="agent-name">Scout</div>
+                                    <div class="status-text">Standby</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="agent-box" id="scraperAgent">
+                                    <i class="fas fa-globe"></i>
+                                    <div class="agent-name">Scraper</div>
+                                    <div class="status-text">Standby</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="agent-box" id="analyzerAgent">
+                                    <i class="fas fa-microscope"></i>
+                                    <div class="agent-name">Analyzer</div>
+                                    <div class="status-text">Standby</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="agent-box" id="seoAgent">
+                                    <i class="fas fa-sparkles"></i>
+                                    <div class="agent-name">SEO</div>
+                                    <div class="status-text">Standby</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="agent-box" id="qualityAgent">
+                                    <i class="fas fa-chart-line"></i>
+                                    <div class="agent-name">Quality</div>
+                                    <div class="status-text">Standby</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="agent-box" id="storageAgent">
+                                    <i class="fas fa-database"></i>
+                                    <div class="agent-name">Storage</div>
+                                    <div class="status-text">Standby</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- N8N Style Workflow Visualization -->
+                    <div class="workflow-container mt-4" id="workflowContainer" style="display: none;">
+                        <button class="workflow-toggle" onclick="toggleWorkflowView()">
+                            <i class="fas fa-project-diagram"></i> Workflow View
+                        </button>
+                        <div class="workflow-canvas" id="workflowCanvas">
+                            <!-- Workflow nodes will be generated here -->
+                        </div>
+                        <!-- Tooltip -->
+                        <div class="workflow-tooltip" id="workflowTooltip">
+                            <div class="tooltip-section">
+                                <div class="tooltip-title">Agent Details</div>
+                                <div class="tooltip-content" id="tooltipAgent"></div>
+                            </div>
+                            <div class="tooltip-section">
+                                <div class="tooltip-title">Execution Status</div>
+                                <div class="tooltip-content" id="tooltipStatus"></div>
+                            </div>
+                            <div class="tooltip-section">
+                                <div class="tooltip-title">AI Prompt Sent</div>
+                                <div class="tooltip-content" id="tooltipPrompt"></div>
+                            </div>
+                            <div class="tooltip-section">
+                                <div class="tooltip-title">AI Response</div>
+                                <div class="tooltip-content" id="tooltipResponse"></div>
+                            </div>
+                            <div class="tooltip-section">
+                                <div class="tooltip-title">URLs Processed</div>
+                                <div class="tooltip-content" id="tooltipUrls"></div>
+                            </div>
+                            <div class="tooltip-section">
+                                <div class="tooltip-title">Execution Time</div>
+                                <div class="tooltip-content" id="tooltipTime"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Agent Status Grid -->
                     <div class="agent-status" id="agentStatus">
                         <div class="agent-box" id="agent-scout">
@@ -474,6 +804,10 @@
                     } else if (data.status === 'error') {
                         showError(data.message);
                     } else {
+                        // Update workflow visualization if active
+                        if (workflowViewActive) {
+                            updateWorkflowVisualization();
+                        }
                         setTimeout(monitorProgress, 1000);
                     }
                 } else {
@@ -481,6 +815,27 @@
                 }
             } catch (error) {
                 showError('Bağlantı hatası: ' + error.message);
+            }
+        }
+
+        function updateAgentStatus(agentName, status, message) {
+            const agentElement = document.getElementById(agentName + 'Agent');
+            if (!agentElement) return;
+            
+            const statusElement = agentElement.querySelector('.status-text');
+            
+            // Remove all status classes
+            agentElement.classList.remove('active', 'completed');
+            
+            // Add appropriate class and update text
+            if (status === 'active') {
+                agentElement.classList.add('active');
+                statusElement.textContent = message || 'Working...';
+            } else if (status === 'completed') {
+                agentElement.classList.add('completed');
+                statusElement.textContent = message || 'Completed';
+            } else {
+                statusElement.textContent = 'Standby';
             }
         }
 
@@ -496,7 +851,29 @@
                 document.getElementById('processingTime').textContent = `İşlem süresi: ${elapsed} saniye`;
             }
             
-            // Update agent statuses
+            // Update agent statuses based on progress
+            const progress = data.progress || 0;
+            
+            if (progress >= 0 && progress < 20) {
+                updateAgentStatus('scout', 'active', 'Finding URLs...');
+            } else if (progress >= 20 && progress < 40) {
+                updateAgentStatus('scout', 'completed', '30 URLs Found');
+                updateAgentStatus('scraper', 'active', 'Extracting data...');
+            } else if (progress >= 40 && progress < 60) {
+                updateAgentStatus('scraper', 'completed', 'Data extracted');
+                updateAgentStatus('analyzer', 'active', 'Analyzing...');
+            } else if (progress >= 60 && progress < 80) {
+                updateAgentStatus('analyzer', 'completed', 'Analysis done');
+                updateAgentStatus('seo', 'active', 'Generating SEO...');
+            } else if (progress >= 80 && progress < 95) {
+                updateAgentStatus('seo', 'completed', 'SEO generated');
+                updateAgentStatus('quality', 'active', 'Quality check...');
+            } else if (progress >= 95) {
+                updateAgentStatus('quality', 'completed', 'Quality OK');
+                updateAgentStatus('storage', 'active', 'Storing data...');
+            }
+            
+            // Update agent statuses from data if available
             if (data.ai_agents) {
                 for (const [agent, status] of Object.entries(data.ai_agents)) {
                     const agentBox = document.getElementById(`agent-${agent}`);
@@ -545,25 +922,30 @@
                             <div class="row">
                                 <div class="col-md-8">
                                     <h5 class="card-title">
-                                        ${result.product.name || 'Ürün Adı'}
-                                        ${result.product.ai_analyzed ? '<span class="demo-badge">AI Demo</span>' : ''}
+                                        ${result.name || 'Ürün Adı'}
+                                        ${result.ai_model ? `<span class="demo-badge">${result.ai_model}</span>` : ''}
                                     </h5>
                                     <p class="card-text">
-                                        <strong>Marka:</strong> ${result.product.brand || 'Bilinmiyor'}<br>
-                                        <strong>Fiyat:</strong> ${result.product.price || 'Bilinmiyor'}<br>
-                                        <strong>Kategori:</strong> ${result.product.category || 'Bilinmiyor'}
+                                        <strong>Marka:</strong> ${result.brand || 'Bilinmiyor'}<br>
+                                        <strong>Fiyat:</strong> ${result.price || 'Bilinmiyor'}<br>
+                                        <strong>Kategori:</strong> ${result.category || 'Bilinmiyor'}
                                     </p>
                                     <div class="mb-3">
-                                        <strong>AI Anahtar Kelimeler (${result.seo.keywords ? result.seo.keywords.length : 0}):</strong><br>
-                                        ${result.seo.keywords ? result.seo.keywords.slice(0, 7).map(k => 
+                                        <strong>🎯 AI Keywords (${result.keywords ? result.keywords.length : 0}):</strong><br>
+                                        ${result.keywords ? result.keywords.slice(0, 7).map(k => 
                                             `<span class="badge bg-primary me-1 mb-1">${k}</span>`
-                                        ).join('') : ''}
+                                        ).join('') : '<span class="text-muted">Keywords not generated</span>'}
                                     </div>
-                                    <div>
-                                        <small class="text-muted">
-                                            <strong>SEO Başlığı:</strong> ${result.seo.title || ''}<br>
-                                            <strong>Meta Açıklama:</strong> ${result.seo.meta_description || ''}
-                                        </small>
+                                    <div class="seo-section p-3 bg-light rounded">
+                                        <h6 class="text-primary">🚀 AI-Generated SEO Data:</h6>
+                                        <div class="mb-2">
+                                            <strong>SEO Title:</strong><br>
+                                            <span class="text-dark">${result.seo_title || 'Not generated'}</span>
+                                        </div>
+                                        <div>
+                                            <strong>Meta Description:</strong><br>
+                                            <span class="text-muted small">${result.meta_description || 'Not generated'}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-end">
@@ -632,6 +1014,144 @@
                 console.log('AI Agent System Status:', data);
             })
             .catch(err => console.error('Agent status check failed:', err));
+
+        // N8N Style Workflow Visualization
+        let workflowViewActive = false;
+        let currentWorkflowData = null;
+        
+        function toggleWorkflowView() {
+            workflowViewActive = !workflowViewActive;
+            const workflowContainer = document.getElementById('workflowContainer');
+            const agentStatus = document.getElementById('agentStatus');
+            const toggleButton = document.querySelector('.workflow-toggle');
+            
+            if (workflowViewActive) {
+                workflowContainer.style.display = 'block';
+                agentStatus.style.display = 'none';
+                toggleButton.innerHTML = '<i class="fas fa-th"></i> Grid View';
+                if (currentTaskId) {
+                    updateWorkflowVisualization();
+                }
+            } else {
+                workflowContainer.style.display = 'none';
+                agentStatus.style.display = 'flex';
+                toggleButton.innerHTML = '<i class="fas fa-project-diagram"></i> Workflow View';
+            }
+        }
+        
+        async function updateWorkflowVisualization() {
+            if (!currentTaskId || !workflowViewActive) return;
+            
+            try {
+                const response = await fetch(`/workflow/${currentTaskId}`);
+                const workflowData = await response.json();
+                currentWorkflowData = workflowData;
+                
+                renderWorkflowNodes(workflowData);
+                renderWorkflowConnections(workflowData);
+                
+            } catch (error) {
+                console.error('Workflow visualization error:', error);
+            }
+        }
+        
+        function renderWorkflowNodes(workflowData) {
+            const canvas = document.getElementById('workflowCanvas');
+            canvas.innerHTML = ''; // Clear existing nodes
+            
+            workflowData.nodes.forEach(node => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = `workflow-node ${node.status}`;
+                nodeElement.style.left = node.position.x + 'px';
+                nodeElement.style.top = node.position.y + 'px';
+                nodeElement.id = `workflow-${node.id}`;
+                
+                nodeElement.innerHTML = `
+                    <div class="workflow-node-icon">
+                        <i class="${node.icon}"></i>
+                    </div>
+                    <div>${node.name}</div>
+                `;
+                
+                // Add hover events for tooltip
+                nodeElement.addEventListener('mouseenter', (e) => showWorkflowTooltip(e, node));
+                nodeElement.addEventListener('mouseleave', hideWorkflowTooltip);
+                
+                canvas.appendChild(nodeElement);
+            });
+        }
+        
+        function renderWorkflowConnections(workflowData) {
+            const canvas = document.getElementById('workflowCanvas');
+            
+            workflowData.connections.forEach(connection => {
+                const sourceNode = workflowData.nodes.find(n => n.id === connection.source);
+                const targetNode = workflowData.nodes.find(n => n.id === connection.target);
+                
+                if (sourceNode && targetNode) {
+                    const connectionElement = document.createElement('div');
+                    connectionElement.className = 'workflow-connection';
+                    
+                    // Check if connection should be active
+                    const sourceCompleted = sourceNode.status === 'completed';
+                    const targetActive = targetNode.status === 'running' || targetNode.status === 'completed';
+                    
+                    if (sourceCompleted || targetActive) {
+                        connectionElement.classList.add('active');
+                    }
+                    
+                    // Position the connection line
+                    const startX = sourceNode.position.x + 120; // Node width
+                    const startY = sourceNode.position.y + 40; // Node height / 2
+                    const endX = targetNode.position.x;
+                    const endY = targetNode.position.y + 40;
+                    
+                    const width = endX - startX;
+                    
+                    connectionElement.style.left = startX + 'px';
+                    connectionElement.style.top = startY + 'px';
+                    connectionElement.style.width = width + 'px';
+                    
+                    canvas.appendChild(connectionElement);
+                }
+            });
+        }
+        
+        function showWorkflowTooltip(event, node) {
+            const tooltip = document.getElementById('workflowTooltip');
+            const execution = node.execution;
+            
+            // Update tooltip content
+            document.getElementById('tooltipAgent').textContent = node.name;
+            document.getElementById('tooltipStatus').textContent = 
+                execution ? execution.status.toUpperCase() : 'PENDING';
+            
+            document.getElementById('tooltipPrompt').textContent = 
+                execution?.prompt_sent || 'No prompt sent yet';
+            
+            document.getElementById('tooltipResponse').textContent = 
+                execution?.ai_response || 'No response yet';
+            
+            document.getElementById('tooltipUrls').textContent = 
+                execution?.urls_processed?.join(', ') || 'No URLs processed';
+            
+            document.getElementById('tooltipTime').textContent = 
+                execution ? `${execution.execution_duration.toFixed(2)}s` : '0s';
+            
+            // Position tooltip
+            const rect = event.target.getBoundingClientRect();
+            const containerRect = document.getElementById('workflowContainer').getBoundingClientRect();
+            
+            tooltip.style.left = (rect.left - containerRect.left) + 'px';
+            tooltip.style.top = (rect.bottom - containerRect.top + 10) + 'px';
+            
+            tooltip.classList.add('show');
+        }
+        
+        function hideWorkflowTooltip() {
+            const tooltip = document.getElementById('workflowTooltip');
+            tooltip.classList.remove('show');
+        }
 
         // Verlumeo Logo - Simple Chat-style Interaction
         const verlumeoLogo = document.getElementById('verlumeoLogo');

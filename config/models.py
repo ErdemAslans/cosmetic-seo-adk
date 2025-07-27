@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 from pydantic import BaseModel, HttpUrl, Field
 from enum import Enum
 
@@ -49,7 +49,7 @@ class SiteConfig(BaseModel):
     name: str
     base_url: HttpUrl
     category_paths: List[str]
-    selectors: Dict[str, str]
+    selectors: Dict[str, Union[str, List[str]]]
     rate_limit: float = 3.0
     max_pages: int = 100
     headers: Dict[str, str] = Field(default_factory=dict)

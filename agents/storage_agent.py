@@ -6,6 +6,7 @@ Stores validated cosmetic product and SEO data to multiple formats
 import json
 import csv
 import os
+import time
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from pathlib import Path
@@ -492,7 +493,7 @@ class StorageAgent(LlmAgent):
         
         super().__init__(
             name="storage_agent",
-            model="gemini-1.5-pro-latest",
+            model="gemini-2.0-flash-thinking-exp",
             tools=tools,
             instruction="""
             You are a Storage Agent specialized in persisting validated cosmetic product and SEO data.
@@ -577,6 +578,66 @@ class StorageAgent(LlmAgent):
         except Exception as e:
             logger.error(f"Report generation error: {e}")
             return {"error": str(e)}
+    
+    async def store_batch(self, products: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Store a batch of products efficiently"""
+        try:
+            stored_count = 0
+            errors = []
+            
+            for product in products:
+                try:
+                    # Extract product_data, seo_data, and validation_data from the product dict
+                    product_data = {
+                        'url': product.get('url'),
+                        'site': product.get('site'),
+                        'name': product.get('name'),
+                        'brand': product.get('brand'),
+                        'price': product.get('price'),
+                        'description': product.get('description', ''),
+                        'ingredients': product.get('ingredients', []),
+                        'features': product.get('features', []),
+                        'usage': product.get('usage', ''),
+                        'reviews': product.get('reviews', []),
+                        'images': product.get('images', []),
+                        'scraped_at': product.get('scraped_at', datetime.now())
+                    }
+                    
+                    # Extract or generate SEO data
+                    seo_data = product.get('seo_data', {
+                        'keywords': [],
+                        'primary_keyword': product.get('name', '').split()[0] if product.get('name') else '',
+                        'title': product.get('name', ''),
+                        'meta_description': product.get('description', '')[:160] if product.get('description') else '',
+                        'slug': product.get('url', '').split('/')[-1] if product.get('url') else f"product-{int(time.time())}"
+                    })
+                    
+                    # Simple validation data
+                    validation_data = product.get('validation_data', {
+                        'is_valid': bool(product.get('name') and product.get('url')),
+                        'quality_score': 0.8 if product.get('name') and product.get('description') else 0.5
+                    })
+                    
+                    # Store using the existing storage method
+                    result = await self.process_storage_request(product_data, seo_data, validation_data)
+                    
+                    if 'error' not in result:
+                        stored_count += 1
+                    else:
+                        errors.append(f"Product {product.get('url', 'unknown')}: {result['error']}")
+                        
+                except Exception as e:
+                    errors.append(f"Product {product.get('url', 'unknown')}: {str(e)}")
+            
+            return {
+                'stored': stored_count,
+                'total': len(products),
+                'errors': errors[:5]  # Limit error messages
+            }
+            
+        except Exception as e:
+            logger.error(f"Batch storage error: {e}")
+            return {"error": str(e), "stored": 0}
 
 
 # Direct tool function for main.py and web_app.py
